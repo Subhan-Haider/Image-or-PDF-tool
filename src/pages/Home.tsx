@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, FileImage, FileText, ShieldCheck, Zap, Lock, Sparkles, Wand2, Layers, CheckCircle2 } from 'lucide-react';
 
 export default function Home() {
+  const [sliderActive, setSliderActive] = useState(false);
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 overflow-hidden font-sans relative">
       {/* Background Effects */}
@@ -103,6 +106,68 @@ export default function Home() {
           </Link>
         </div>
 
+        {/* Interactive Before/After Scan Showcase */}
+        <div className="mb-28 bg-white/40 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 rounded-3xl p-8 sm:p-12 relative overflow-hidden backdrop-blur">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-600 dark:text-violet-400 text-xs font-semibold mb-6">
+                <Sparkles size={12} />
+                <span>Zero-Loss Enhancements</span>
+              </div>
+              <h3 className="font-display text-3xl font-bold text-slate-900 dark:text-white mb-6">
+                See Scan Enhancements in Action
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
+                Tilted scans, low-contrast mobile photos, and landscape captures are automatically optimized. Toggle the demonstration preview to experience the professional black & white threshold filter and automatic deskew alignment.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setSliderActive(false)}
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${!sliderActive ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+                >
+                  Raw Scanned Document
+                </button>
+                <button
+                  onClick={() => setSliderActive(true)}
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${sliderActive ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+                >
+                  Enhanced B&W Output
+                </button>
+              </div>
+            </div>
+            
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-6 shadow-inner">
+              {/* Document Mock */}
+              <div 
+                className={`w-3/4 max-w-[280px] bg-white rounded-lg shadow-lg p-6 border transition-all duration-700 ${!sliderActive ? 'rotate-3 border-slate-300 scale-95 opacity-90 filter brightness-90 contrast-75 bg-slate-100' : 'rotate-0 border-primary-500/20 scale-100 opacity-100 text-slate-950 bg-white'}`}
+              >
+                {/* Simulated content */}
+                <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-2">
+                  <div className={`h-4 w-20 rounded bg-slate-400/50 ${sliderActive ? 'bg-black' : ''}`} />
+                  <div className={`h-3 w-10 rounded bg-slate-300/50 ${sliderActive ? 'bg-primary-600' : ''}`} />
+                </div>
+                <div className="space-y-2 mb-4">
+                  <div className={`h-2.5 w-full rounded bg-slate-300/40 ${sliderActive ? 'bg-black' : ''}`} />
+                  <div className={`h-2.5 w-11/12 rounded bg-slate-300/40 ${sliderActive ? 'bg-black' : ''}`} />
+                  <div className={`h-2.5 w-10/12 rounded bg-slate-300/40 ${sliderActive ? 'bg-black' : ''}`} />
+                  <div className={`h-2.5 w-full rounded bg-slate-300/40 ${sliderActive ? 'bg-black' : ''}`} />
+                </div>
+                {/* Stamp badge */}
+                <div className="flex justify-end pt-2">
+                  <div className={`text-[10px] font-black border-2 px-2 py-0.5 rounded uppercase transition-all duration-500 ${sliderActive ? 'border-emerald-600 text-emerald-600 scale-100 bg-emerald-50' : 'border-slate-300 text-slate-300 scale-75 rotate-12 opacity-40'}`}>
+                    APPROVED
+                  </div>
+                </div>
+              </div>
+              
+              {/* Labels */}
+              <span className="absolute top-4 left-4 text-[10px] font-mono font-bold tracking-widest text-slate-400 bg-black/10 dark:bg-white/5 px-2.5 py-1 rounded-full uppercase">
+                {sliderActive ? 'Optimized' : 'Tilted & Grey'}
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Visual Stats Section */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-28 border-y border-slate-200 dark:border-white/10 py-12">
           {[
@@ -180,6 +245,31 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Security & Regulatory Compliance Banner */}
+        <div className="mb-28 grid sm:grid-cols-2 gap-8 items-center border-t border-slate-200 dark:border-white/10 pt-16">
+          <div>
+            <h4 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-4">
+              Enterprise-Grade Compliance, Out of the Box
+            </h4>
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+              Because all image conversion, B&W scan processing, watermark rendering, and annotations are executed entirely within local RAM memory in the client browser, your company remains fully compliant with stringent global regulatory requirements.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { title: 'GDPR Compliant', desc: 'No cookie tracking or personal data collection.' },
+              { title: 'HIPAA Standard', desc: 'Medical records and documents never leave client device.' },
+              { title: 'ISO 27001 Ready', desc: 'Zero data storage means zero attack surface.' },
+              { title: '100% In-Memory', desc: 'Files completely vanish upon page refresh.' }
+            ].map((item, idx) => (
+              <div key={idx} className="p-4 bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/5">
+                <div className="font-bold text-slate-900 dark:text-white text-sm mb-1">{item.title}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Testimonials */}
         <div className="mb-28">
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -225,6 +315,33 @@ export default function Home() {
                 <p className="text-sm text-slate-600 dark:text-slate-400 pl-6 leading-relaxed">{faq.a}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Newsletter / Updates Section */}
+        <div className="mb-20 relative rounded-3xl bg-gradient-to-r from-primary-600/10 to-violet-600/10 border border-primary-500/20 p-8 sm:p-12 text-center max-w-4xl mx-auto overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.1),transparent_50%)]" />
+          <div className="relative z-10">
+            <h3 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-4">
+              Stay Updated with Pro Utilities
+            </h3>
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-xl mx-auto mb-8 leading-relaxed">
+              We periodically launch brand new local-first utilities. Subscribe to our newsletter to receive feature release logs and premium upgrades.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <input
+                type="email"
+                placeholder="Enter your email address"
+                required
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+              />
+              <button
+                onClick={() => alert('Successfully joined update log!')}
+                className="px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-primary-500/10 hover:shadow-primary-500/20"
+              >
+                Join Newsletter
+              </button>
+            </div>
           </div>
         </div>
 
