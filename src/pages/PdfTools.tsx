@@ -71,6 +71,10 @@ export default function PdfTools() {
   const [compressMode, setCompressMode] = useState<'low' | 'medium' | 'high' | 'preserve'>('medium');
   const [compressProgress, setCompressProgress] = useState<{ current: number; total: number; currentSize: number } | null>(null);
   const [compressResult, setCompressResult] = useState<{ originalSize: number; compressedSize: number; downloadUrl: string; filename: string } | null>(null);
+
+  // --- Compiled PDF Result State (PDF Organizer + Images to PDF) ---
+  const [compiledPdfResult, setCompiledPdfResult] = useState<{ url: string; filename: string } | null>(null);
+  const [compiledImagesPdfResult, setCompiledImagesPdfResult] = useState<{ url: string; filename: string } | null>(null);
   
   // --- Zoom Modal / Gallery State ---
   const [zoomGallery, setZoomGallery] = useState<{ images: string[]; index: number } | null>(null);
@@ -828,16 +832,11 @@ export default function PdfTools() {
       const pdfBytes = await compiledPdf.save();
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
+      const filename = `${editorFilename.replace(/\.pdf$/, '') || 'compiled_document'}.pdf`;
 
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${editorFilename.replace(/\.pdf$/, '') || 'compiled_document'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      setTimeout(() => URL.revokeObjectURL(url), 500);
-      notify('PDF generated and downloaded ✓', 'success');
+      // Store result for Download/Share buttons instead of auto-downloading
+      setCompiledPdfResult({ url, filename });
+      notify('PDF compiled successfully! Click Download or Share below ✓', 'success');
     } catch (err: any) {
       notify(`PDF compilation failed: ${err.message}`, 'error');
     }
@@ -912,14 +911,10 @@ export default function PdfTools() {
         const bytes = await doc.save();
         const blob = new Blob([bytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
+        const filename = `${imagesFilename.replace(/\.pdf$/, '') || 'images_document'}.pdf`;
 
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${imagesFilename.replace(/\.pdf$/, '') || 'images_document'}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 500);
+        // Store result for Download/Share buttons
+        setCompiledImagesPdfResult({ url, filename });
       } else {
         // Fallback to classic jsPDF engine
         let doc: any = null;
@@ -940,7 +935,7 @@ export default function PdfTools() {
         doc.save(`${imagesFilename.replace(/\.pdf$/, '')}.pdf`);
       }
 
-      notify('Images converted to PDF successfully ✓', 'success');
+      notify('Images compiled to PDF successfully! Click Download or Share below ✓', 'success');
     } catch (err: any) {
       notify(`Failed to merge images: ${err.message}`, 'error');
     }
@@ -1751,9 +1746,9 @@ export default function PdfTools() {
                   </div>
                 </div>
 
-                <div className="mt-6 border-t border-black/5 dark:border-white/5 pt-4">
+                <div className="mt-6 border-t border-black/5 dark:border-white/5 pt-4 space-y-3">
                   <Button 
-                    onClick={handleCompilePdf}
+                    onClick={() => { setCompiledPdfResult(null); handleCompilePdf(); }}
                     disabled={pdfPages.length === 0 || isProcessing}
                     className="w-full py-3 flex items-center justify-center gap-2"
                   >
@@ -1763,6 +1758,35 @@ export default function PdfTools() {
                       <><Layers size={16} /> Compile & Merge PDF</>
                     )}
                   </Button>
+
+                  {/* Download & Share buttons after compile */}
+                  {compiledPdfResult && (
+                    <div className="flex gap-2 animate-fade-in">
+                      <a
+                        href={compiledPdfResult.url}
+                        download={compiledPdfResult.filename}
+                        onClick={e => {
+                          // Ensure DOM-attached download
+                          e.preventDefault();
+                          const a = document.createElement('a');
+                          a.href = compiledPdfResult.url;
+                          a.download = compiledPdfResult.filename;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-all shadow-md"
+                      >
+                        <Download size={15} /> Download
+                      </a>
+                      <button
+                        onClick={() => handleShareFile(compiledPdfResult.url, compiledPdfResult.filename, 'application/pdf')}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-all shadow-md"
+                      >
+                        <Share2 size={15} /> Share
+                      </button>
+                    </div>
+                  )}
                 </div>
               </Card>
             )}
@@ -1896,9 +1920,9 @@ export default function PdfTools() {
                   </div>
                 </div>
 
-                <div className="mt-6 border-t border-black/5 dark:border-white/5 pt-4">
+                <div className="mt-6 border-t border-black/5 dark:border-white/5 pt-4 space-y-3">
                   <Button 
-                    onClick={handleCompileImagesToPdf}
+                    onClick={() => { setCompiledImagesPdfResult(null); handleCompileImagesToPdf(); }}
                     disabled={imagePages.length === 0 || isProcessing}
                     className="w-full py-3 flex items-center justify-center gap-2"
                   >
@@ -1908,6 +1932,33 @@ export default function PdfTools() {
                       <><Layers size={16} /> Generate PDF</>
                     )}
                   </Button>
+
+                  {compiledImagesPdfResult && (
+                    <div className="flex gap-2 animate-fade-in">
+                      <a
+                        href={compiledImagesPdfResult.url}
+                        download={compiledImagesPdfResult.filename}
+                        onClick={e => {
+                          e.preventDefault();
+                          const a = document.createElement('a');
+                          a.href = compiledImagesPdfResult.url;
+                          a.download = compiledImagesPdfResult.filename;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-all shadow-md"
+                      >
+                        <Download size={15} /> Download
+                      </a>
+                      <button
+                        onClick={() => handleShareFile(compiledImagesPdfResult.url, compiledImagesPdfResult.filename, 'application/pdf')}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-all shadow-md"
+                      >
+                        <Share2 size={15} /> Share
+                      </button>
+                    </div>
+                  )}
                 </div>
               </Card>
             )}
