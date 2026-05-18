@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from 'react';
-import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2 } from 'lucide-react';
+import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2, Maximize2 } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { useToast } from '../hooks/useToast';
@@ -71,6 +71,9 @@ export default function PdfTools() {
   const [compressMode, setCompressMode] = useState<'low' | 'medium' | 'high' | 'preserve'>('medium');
   const [compressProgress, setCompressProgress] = useState<{ current: number; total: number; currentSize: number } | null>(null);
   const [compressResult, setCompressResult] = useState<{ originalSize: number; compressedSize: number; downloadUrl: string; filename: string } | null>(null);
+  
+  // --- Zoom Modal State ---
+  const [zoomImage, setZoomImage] = useState<string | null>(null);
 
   // --- Drag and Drop Reordering State ---
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -436,6 +439,17 @@ export default function PdfTools() {
     window.addEventListener('paste', handleGlobalPaste);
     return () => window.removeEventListener('paste', handleGlobalPaste);
   }, [activeTab]);
+
+  // Esc key listener for zoom modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setZoomImage(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // --- Office to PDF Local Processing Core ---
   const handleOfficeUpload = async (file: File) => {
@@ -1112,6 +1126,14 @@ export default function PdfTools() {
                             <div className="absolute top-2 right-2 z-25 flex items-center gap-1.5 bg-black/50 backdrop-blur-md p-1 rounded-lg shadow-lg border border-white/10">
                               <button 
                                 type="button"
+                                onClick={() => setZoomImage(page.thumbnail)}
+                                className="p-1.5 rounded-md bg-white/10 text-white hover:bg-primary-500 hover:text-white transition-all animate-pulse"
+                                title="Zoom Page"
+                              >
+                                <Maximize2 size={12} />
+                              </button>
+                              <button 
+                                type="button"
                                 onClick={() => rotatePage(page.id)}
                                 className="p-1.5 rounded-md bg-white/10 text-white hover:bg-primary-500 hover:text-white transition-all"
                                 title="Rotate Page 90°"
@@ -1331,6 +1353,14 @@ export default function PdfTools() {
                             
                             {/* Floating Actions - Fully Touch & Mobile Friendly */}
                             <div className="absolute top-2 right-2 z-25 flex items-center gap-1.5 bg-black/50 backdrop-blur-md p-1 rounded-lg shadow-lg border border-white/10">
+                              <button 
+                                type="button"
+                                onClick={() => setZoomImage(item.preview)}
+                                className="p-1.5 rounded-md bg-white/10 text-white hover:bg-primary-500 hover:text-white transition-all animate-pulse"
+                                title="Zoom Image"
+                              >
+                                <Maximize2 size={12} />
+                              </button>
                               <button 
                                 type="button"
                                 onClick={() => deleteImagePage(item.id)}
@@ -1953,6 +1983,40 @@ export default function PdfTools() {
       </div>
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* Dynamic Ultra-High-Fidelity Large Zoom Modal Preview */}
+      {zoomImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-955/90 backdrop-blur-lg transition-all duration-300 animate-fade-in"
+          onClick={() => setZoomImage(null)}
+        >
+          <div className="absolute top-4 right-4 z-55 flex items-center gap-2">
+            <span className="text-[10px] text-slate-400 font-semibold bg-black/50 px-3 py-1.5 rounded-lg border border-white/10 tracking-wide uppercase">
+              ESC or Click Outside to close
+            </span>
+            <button 
+              onClick={() => setZoomImage(null)}
+              className="p-2 rounded-xl bg-white/10 hover:bg-red-500 text-white hover:text-white transition-all shadow-lg border border-white/10"
+              title="Close Preview"
+            >
+              <Minimize2 size={16} />
+            </button>
+          </div>
+          
+          <div 
+            className="relative max-w-4xl max-h-[85vh] w-full h-full flex items-center justify-center p-2 sm:p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-white/5 dark:bg-white/10 p-2 sm:p-3 rounded-2xl border border-white/10 shadow-2xl overflow-hidden max-w-full max-h-full flex items-center justify-center">
+              <img 
+                src={zoomImage} 
+                alt="Zoomed Preview" 
+                className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
