@@ -2325,6 +2325,11 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   const [sigMode, setSigMode] = useState<'draw' | 'upload'>('draw');
   const [uploadedSigImage, setUploadedSigImage] = useState<string | null>(null);
   const [stampScale, setStampScale] = useState(2.0); // Default scale to 2.0 (200%) for stamps and signatures
+  const [scaleInputVal, setScaleInputVal] = useState(String(Math.round(stampScale * 100)));
+
+  useEffect(() => {
+    setScaleInputVal(String(Math.round(stampScale * 100)));
+  }, [stampScale]);
 
   // Text Tool Overlay State
   const [textInput, setTextInput] = useState<{ x: number; y: number; val: string } | null>(null);
@@ -3381,23 +3386,33 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                       </button>
 
                       {/* Scale display input */}
-                      <div className="flex items-center gap-0.5">
+                      <div className="flex items-center gap-0.5" onKeyDown={(e) => e.stopPropagation()} onKeyUp={(e) => e.stopPropagation()} onKeyPress={(e) => e.stopPropagation()}>
                         <input
                           type="text"
-                          defaultValue={Math.round(stampScale * 100)}
-                          key={Math.round(stampScale * 100)}
-                          onBlur={(e) => {
+                          value={scaleInputVal}
+                          onChange={(e) => {
+                            setScaleInputVal(e.target.value);
                             const val = e.target.value.replace(/%/g, '').trim();
                             const num = parseInt(val, 10);
-                            if (!isNaN(num)) {
+                            if (!isNaN(num) && num > 0) {
                               setStampScale(Math.min(5.0, Math.max(0.05, num / 100)));
                             }
                           }}
+                          onBlur={() => {
+                            const val = scaleInputVal.replace(/%/g, '').trim();
+                            const num = parseInt(val, 10);
+                            if (!isNaN(num) && num > 0) {
+                              setStampScale(Math.min(5.0, Math.max(0.05, num / 100)));
+                            } else {
+                              setScaleInputVal(String(Math.round(stampScale * 100)));
+                            }
+                          }}
                           onKeyDown={(e) => {
+                            e.stopPropagation();
                             if (e.key === 'Enter') {
-                              const val = (e.target as HTMLInputElement).value.replace(/%/g, '').trim();
+                              const val = scaleInputVal.replace(/%/g, '').trim();
                               const num = parseInt(val, 10);
-                              if (!isNaN(num)) {
+                              if (!isNaN(num) && num > 0) {
                                 setStampScale(Math.min(5.0, Math.max(0.05, num / 100)));
                               }
                               (e.target as HTMLInputElement).blur();
