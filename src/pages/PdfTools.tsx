@@ -3432,11 +3432,6 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                           value={scaleInputVal}
                           onChange={(e) => {
                             setScaleInputVal(e.target.value);
-                            const val = e.target.value.replace(/%/g, '').trim();
-                            const num = parseInt(val, 10);
-                            if (!isNaN(num) && num > 0) {
-                              setStampScale(Math.min(5.0, Math.max(0.05, num / 100)));
-                            }
                           }}
                           onBlur={() => {
                             const val = scaleInputVal.replace(/%/g, '').trim();
