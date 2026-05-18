@@ -1,57 +1,97 @@
-# Image Converter Pro 🎨 & Client-Side PDF Tools 📄
+<div align="center">
+  
+# 🎨 Image Converter Pro & 📄 Client-Side PDF Tools
 
-A powerful, privacy-first web application for processing images and PDF documents entirely in your browser. No files are ever uploaded to a server—everything runs locally using modern Web APIs.
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![PDF-Lib](https://img.shields.io/badge/PDF--Lib-FF4B4B?style=for-the-badge&logo=adobe-acrobat-reader&logoColor=white)](https://pdf-lib.js.org/)
+
+**A powerful, privacy-first web application for processing images and PDF documents entirely in your browser.**
+<br />
+*No files are ever uploaded to a server—everything runs locally using modern Web APIs.*
+
+</div>
+
+---
 
 ## 🌟 Key Features
 
 ### 🖼️ Image Processing (Converter)
-* **Format Conversion**: Convert between WebP, PNG, JPEG, GIF, BMP, and ICO.
-* **Smart Compression**: Compress images with adjustable quality sliders to save space.
-* **Resizing Engine**: Precisely resize images by width and height while maintaining aspect ratios.
+* **Format Conversion**: Convert seamlessly between `WebP`, `PNG`, `JPEG`, `GIF`, `BMP`, and `ICO`.
+* **Smart Compression**: Compress images with interactive quality sliders to save disk space without noticeable visual loss.
+* **Resizing Engine**: Precisely resize images by absolute width and height while preserving original aspect ratios.
 * **Rounded Corners**: Add beautifully rounded borders and corners to any image before downloading.
-* **Batch Support**: Drag and drop multiple images at once.
+* **Batch Support**: Drag and drop multiple images at once for rapid editing.
 
 ### 📄 Document Processing (PDF Tools)
-* **PDF Organizer**: Visually drag, drop, rotate, and delete pages from multiple PDFs, then compile them into a single merged document.
-* **PDF to Images**: Extract pages from your PDF documents into high-resolution (300 DPI) PNG or JPEG images.
-* **Images to PDF**: Compile multiple images into a standardized PDF format (A4, Letter, or Fit-to-image).
-* **Compress PDF**: Reduce PDF file sizes significantly with Low, Medium, High, or Quality-Preserving compression modes.
-* **Native Sharing**: Share compiled documents and extracted images directly to WhatsApp, email, or other apps using the native OS Share Sheet.
+* **PDF Organizer**: Visually drag, drop, rotate, and delete pages from multiple PDFs at once, then compile them into a single merged document.
+* **PDF to Images**: Extract pages from your PDF documents into high-resolution (300 DPI equivalent) PNG or JPEG images.
+* **Images to PDF**: Compile multiple images into a standardized PDF format (`A4`, `Letter`, or `Fit-to-image`).
+* **Compress PDF**: Reduce PDF file sizes significantly with `Low`, `Medium`, `High`, or `Quality-Preserving` compression modes.
+* **Native Sharing**: Share compiled documents and extracted images directly to WhatsApp, Gmail, or other OS applications using the native Web Share API.
+
+---
 
 ## 🔒 100% Privacy Promise
-This entire suite of tools is designed to execute locally within the browser's virtualized sandbox via JavaScript/WebAssembly. **No files, images, or metadata ever touch an external server.**
+This entire suite of tools is designed to execute completely locally within the browser's virtualized sandbox via JavaScript and WebAssembly. 
+* **Zero Uploads**: No files, images, or metadata ever touch an external server.
+* **Zero Tracking**: Completely offline-capable processing after the initial page load.
+* **Highly Secure**: Ideal for confidential documents, IDs, and private photography.
 
-## 🚀 Tech Stack
+---
+
+## 🚀 Tech Stack & Engines
 
 * **Frontend Framework**: React 18 with TypeScript
-* **Build Tool**: Vite
-* **Styling**: Tailwind CSS with custom Glassmorphism UI
+* **Build Tool**: Vite (Lightning fast HMR)
+* **Styling**: Tailwind CSS with custom Glassmorphism UI elements
 * **Icons**: Lucide React
-* **PDF Engine**: `pdf-lib` (manipulation) & `pdf.js` (rendering)
-* **Image Engine**: Native HTML5 Canvas API
+* **PDF Engine**: 
+  * `pdf-lib` for reading, writing, and merging raw PDF bytes losslessly.
+  * `pdf.js` (Mozilla) for rendering PDF pages to interactive DOM canvases.
+* **Image Engine**: Native HTML5 `<canvas>` API for high-performance pixel manipulation and compression.
+
+---
 
 ## 💻 Running Locally
 
-1. Clone the repository:
+To get a local copy up and running, follow these simple steps:
+
+### Prerequisites
+Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
+
+### Installation
+
+1. **Clone the repository**
    ```bash
    git clone git@github.com:Subhan-Haider/Image-or-PDF-tool.git
    cd Image-or-PDF-tool
    ```
 
-2. Install dependencies:
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. Start the development server:
+3. **Start the development server**
    ```bash
    npm run dev
    ```
+   *The app will be available at `http://localhost:5173`.*
 
-4. Build for production:
+4. **Build for production**
    ```bash
    npm run build
    ```
+   *The optimized static files will be generated in the `dist` folder.*
+
+---
 
 ## 🤝 Contributing
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
+Contributions, issues, and feature requests are highly welcome! 
+Feel free to check the [issues page](https://github.com/Subhan-Haider/Image-or-PDF-tool/issues) if you want to contribute.
+
+## 📝 License
+This project is [MIT](LICENSE) licensed.
