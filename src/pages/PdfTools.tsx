@@ -992,7 +992,7 @@ export default function PdfTools() {
             {(['editor', 'to-images', 'from-images', 'compress', 'office-to-pdf'] as const).map(tab => {
               const active = activeTab === tab;
               const labels = {
-                'editor': { text: 'PDF Organizer', mobileText: 'Organizer', icon: Layers },
+                'editor': { text: 'Page Management', mobileText: 'Manage', icon: Layers },
                 'to-images': { text: 'PDF to Images', mobileText: 'PDF to Img', icon: FileImage },
                 'from-images': { text: 'Images to PDF', mobileText: 'Img to PDF', icon: ImageIcon },
                 'compress': { text: 'Compress PDF', mobileText: 'Compress', icon: FileDown },
@@ -1104,9 +1104,14 @@ export default function PdfTools() {
                 ) : (
                   <Card>
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/5 dark:border-white/5 pb-4 mb-4">
-                      <h3 className="font-semibold text-slate-900 dark:text-white">
-                        Document Page Organizer ({pdfPages.length} pages loaded)
-                      </h3>
+                      <div>
+                        <h3 className="font-semibold text-slate-900 dark:text-white">
+                          Page Management ({pdfPages.length} pages loaded)
+                        </h3>
+                        <p className="text-[10px] sm:text-xs text-slate-500 mt-1 font-medium hidden sm:block">
+                          Merge PDFs • Split PDF • Delete pages • Rotate pages • Reorder pages • Extract pages
+                        </p>
+                      </div>
                       <div className="flex items-center gap-3">
                         {/* Zoom Size Switcher */}
                         <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-lg border border-black/10 dark:border-white/10 text-[9px] font-semibold">
