@@ -823,9 +823,11 @@ export default function PdfTools() {
       const a = document.createElement('a');
       a.href = url;
       a.download = `${editorFilename.replace(/\.pdf$/, '') || 'compiled_document'}.pdf`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
 
-      setTimeout(() => URL.revokeObjectURL(url), 100);
+      setTimeout(() => URL.revokeObjectURL(url), 500);
       notify('PDF generated and downloaded ✓', 'success');
     } catch (err: any) {
       notify(`PDF compilation failed: ${err.message}`, 'error');
@@ -905,8 +907,10 @@ export default function PdfTools() {
         const a = document.createElement('a');
         a.href = url;
         a.download = `${imagesFilename.replace(/\.pdf$/, '') || 'images_document'}.pdf`;
+        document.body.appendChild(a);
         a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 100);
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 500);
       } else {
         // Fallback to classic jsPDF engine
         let doc: any = null;
@@ -941,8 +945,10 @@ export default function PdfTools() {
         const a = document.createElement('a');
         a.href = item.thumbnail;
         a.download = `extracted_page_${item.pageNum}.${pdfToImgFormat}`;
+        document.body.appendChild(a);
         a.click();
-      }, idx * 250);
+        document.body.removeChild(a);
+      }, idx * 300);
     });
     notify('Extraction started ✓', 'success');
   };
