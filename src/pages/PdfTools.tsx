@@ -288,7 +288,8 @@ export default function PdfTools() {
 
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
-      const viewport = page.getViewport({ scale: 0.8 }); // Lower scale for fast thumbnail rendering
+      // Scale 1.5 for crisp high-fidelity preview thumbnails
+      const viewport = page.getViewport({ scale: 1.5 });
 
       const canvas = document.createElement('canvas');
       canvas.width = viewport.width;
@@ -296,7 +297,8 @@ export default function PdfTools() {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         await page.render({ canvasContext: ctx, viewport }).promise;
-        const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+        // High-quality JPEG at 0.92 for crisp, readable thumbnails
+        const thumbnail = canvas.toDataURL('image/jpeg', 0.92);
         extracted.push({
           id: `${file.name}_p${i}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
           file,
@@ -385,7 +387,8 @@ export default function PdfTools() {
 
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.5 }); // Higher quality for direct conversion
+        // Scale 3.0 for ultra-high-resolution image extraction (300+ DPI equivalent)
+        const viewport = page.getViewport({ scale: 3.0 });
 
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
@@ -393,11 +396,16 @@ export default function PdfTools() {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           await page.render({ canvasContext: ctx, viewport }).promise;
-          const thumbnail = canvas.toDataURL(`image/${pdfToImgFormat}`, pdfToImgQuality / 100);
+          // Use PNG for lossless output when format is png, high-quality JPEG otherwise
+          const mimeType = pdfToImgFormat === 'png' ? 'image/png' : `image/${pdfToImgFormat}`;
+          const quality = pdfToImgFormat === 'png' ? undefined : (pdfToImgQuality / 100);
+          const thumbnail = quality !== undefined
+            ? canvas.toDataURL(mimeType, quality)
+            : canvas.toDataURL(mimeType);
           rendered.push({
             pageNum: i,
             thumbnail,
-            size: Math.round((thumbnail.length * 3) / 4) // estimate size in bytes
+            size: Math.round((thumbnail.length * 3) / 4)
           });
         }
       }
@@ -712,7 +720,7 @@ export default function PdfTools() {
             imgBytes = await pageItem.file.arrayBuffer();
             embeddedImg = await compiledPdf.embedJpg(imgBytes);
           } else {
-            // High fidelity image conversion block for webp, svg, gif, bmp
+            // High fidelity lossless conversion for WebP, SVG, GIF, BMP etc.
             const imgUrl = URL.createObjectURL(pageItem.file);
             const img = await new Promise<HTMLImageElement>((resolve, reject) => {
               const el = new Image();
@@ -729,10 +737,11 @@ export default function PdfTools() {
             if (!ctx) throw new Error('Canvas conversion context failed');
             ctx.drawImage(img, 0, 0);
 
-            const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.95));
-            if (!blob) throw new Error('Blob compression conversion failed');
+            // Use lossless PNG to avoid any JPEG re-encoding quality degradation
+            const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/png'));
+            if (!blob) throw new Error('Blob conversion failed');
             imgBytes = await blob.arrayBuffer();
-            embeddedImg = await compiledPdf.embedJpg(imgBytes);
+            embeddedImg = await compiledPdf.embedPng(imgBytes);
           }
 
           const imgW = embeddedImg.width;
