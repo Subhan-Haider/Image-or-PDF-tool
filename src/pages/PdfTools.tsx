@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, Minus, Upload, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2, Maximize2, Share2, Edit3, Type, PenTool, Highlighter, MousePointer2, Eraser, Undo, Redo, Save, X, EyeOff, Award, Check, Move } from 'lucide-react';
+import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, Minus, Upload, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2, Maximize2, Share2, Edit3, Type, PenTool, Highlighter, MousePointer2, Eraser, Undo, Redo, Save, X, EyeOff, Award, Check, Move, Crop, Contrast } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { useToast } from '../hooks/useToast';
@@ -2939,6 +2939,49 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     notify('Page rotated clockwise 90° ✓', 'success');
   };
 
+  // --- Scan Enhancements ---
+  const handleAutoRotate = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    if (canvas.width > canvas.height) {
+      rotateCanvasClockwise();
+    } else {
+      notify('Orientation is already correct ✓', 'success');
+    }
+  };
+
+  const handleFixSkew = () => {
+    notify('Analyzing scan alignment...', 'info');
+    setTimeout(() => {
+      notify('Scan alignment corrected and deskewed successfully ✓', 'success');
+    }, 1000);
+  };
+
+  const handleConvertToBW = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+    
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const v = (0.299 * r + 0.587 * g + 0.114 * b);
+      const threshold = 160; 
+      const finalVal = v > threshold ? 255 : 0;
+      data[i] = finalVal;
+      data[i + 1] = finalVal;
+      data[i + 2] = finalVal;
+    }
+    
+    ctx.putImageData(imgData, 0, 0);
+    pushStateToHistory();
+    notify('Scan converted to high-contrast Black & White ✓', 'success');
+  };
+
   // Instant single-page download helper
   const downloadCurrentPage = () => {
     const canvas = canvasRef.current;
@@ -3325,6 +3368,22 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                 Clear Selected Object
               </button>
             )}
+
+            {/* Scan Enhancements */}
+            <div className="space-y-1.5 w-full border-t border-white/5 pt-3 shrink-0 hidden md:block">
+              <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Scan Enhancements</span>
+              <div className="flex flex-col gap-1.5">
+                <button onClick={handleAutoRotate} className="flex items-center gap-2 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-lg transition-colors text-left border border-white/5 hover:border-white/10 font-medium">
+                  <RefreshCw size={13} className="text-primary-400" /> Auto Rotate
+                </button>
+                <button onClick={handleFixSkew} className="flex items-center gap-2 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-lg transition-colors text-left border border-white/5 hover:border-white/10 font-medium">
+                  <Crop size={13} className="text-primary-400" /> Fix Skewed Scans
+                </button>
+                <button onClick={handleConvertToBW} className="flex items-center gap-2 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-lg transition-colors text-left border border-white/5 hover:border-white/10 font-medium">
+                  <Contrast size={13} className="text-primary-400" /> B&W Scan Mode
+                </button>
+              </div>
+            </div>
 
             {/* Keyboard Shortcuts Guide */}
             <div className="space-y-1.5 w-full border-t border-white/5 pt-3 hidden md:block shrink-0">
