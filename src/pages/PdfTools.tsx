@@ -64,7 +64,7 @@ export default function PdfTools() {
   const [officeFilename, setOfficeFilename] = useState('office_document');
 
   // --- Grid View Zoom State ---
-  const [pageSizeMode, setPageSizeMode] = useState<'small' | 'medium' | 'large'>('medium');
+  const [pageSizeMode, setPageSizeMode] = useState<'small' | 'medium' | 'large' | 'extra-large'>('medium');
 
   // --- Drag and Drop Reordering State ---
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -843,20 +843,21 @@ export default function PdfTools() {
                       </h3>
                       <div className="flex items-center gap-3">
                         {/* Zoom Size Switcher */}
-                        <div className="flex items-center gap-1.5 bg-black/5 dark:bg-white/5 p-1 rounded-lg border border-black/10 dark:border-white/10 text-[10px] font-semibold">
-                          <span className="text-slate-400 px-1">Size:</span>
-                          {(['small', 'medium', 'large'] as const).map(mode => (
+                        <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-lg border border-black/10 dark:border-white/10 text-[9px] font-semibold">
+                          <span className="text-slate-400 px-1 hidden sm:inline">Size:</span>
+                          {(['small', 'medium', 'large', 'extra-large'] as const).map(mode => (
                             <button
                               key={mode}
                               type="button"
                               onClick={() => setPageSizeMode(mode)}
-                              className={`px-2 py-0.5 rounded capitalize transition-all ${
+                              className={`px-2 py-0.5 rounded uppercase font-semibold transition-all ${
                                 pageSizeMode === mode
                                   ? 'bg-white dark:bg-surface-800 text-slate-900 dark:text-white shadow-sm'
                                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                               }`}
+                              title={`Zoom to ${mode}`}
                             >
-                              {mode}
+                              {mode === 'small' ? 'S' : mode === 'medium' ? 'M' : mode === 'large' ? 'L' : 'XL'}
                             </button>
                           ))}
                         </div>
@@ -876,6 +877,8 @@ export default function PdfTools() {
                         ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2' 
                         : pageSizeMode === 'large'
                         ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'
+                        : pageSizeMode === 'extra-large'
+                        ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8 w-full'
                         : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'
                     }`}>
                       {pdfPages.map((page, i) => (
@@ -886,7 +889,9 @@ export default function PdfTools() {
                           onDragOver={handleDragOver}
                           onDragEnd={handleDragEnd}
                           onDrop={e => handleDrop(e, i)}
-                          className={`relative rounded-xl border border-black/10 dark:border-white/10 p-2 bg-black/5 dark:bg-white/5 flex flex-col group cursor-grab active:cursor-grabbing transition-all duration-200 ${
+                          className={`relative rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex flex-col group cursor-grab active:cursor-grabbing transition-all duration-200 ${
+                            pageSizeMode === 'extra-large' ? 'p-4 shadow-xl border-primary-500/20' : 'p-2'
+                          } ${
                             draggedIndex === i ? 'opacity-40 scale-95 border-primary-500' : 'opacity-100 hover:border-black/25 dark:hover:border-white/25'
                           }`}
                         >
@@ -1067,20 +1072,21 @@ export default function PdfTools() {
                       </h3>
                       <div className="flex items-center gap-3">
                         {/* Zoom Size Switcher */}
-                        <div className="flex items-center gap-1.5 bg-black/5 dark:bg-white/5 p-1 rounded-lg border border-black/10 dark:border-white/10 text-[10px] font-semibold">
-                          <span className="text-slate-400 px-1">Size:</span>
-                          {(['small', 'medium', 'large'] as const).map(mode => (
+                        <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-lg border border-black/10 dark:border-white/10 text-[9px] font-semibold">
+                          <span className="text-slate-400 px-1 hidden sm:inline">Size:</span>
+                          {(['small', 'medium', 'large', 'extra-large'] as const).map(mode => (
                             <button
                               key={mode}
                               type="button"
                               onClick={() => setPageSizeMode(mode)}
-                              className={`px-2 py-0.5 rounded capitalize transition-all ${
+                              className={`px-2 py-0.5 rounded uppercase font-semibold transition-all ${
                                 pageSizeMode === mode
                                   ? 'bg-white dark:bg-surface-800 text-slate-900 dark:text-white shadow-sm'
                                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                               }`}
+                              title={`Zoom to ${mode}`}
                             >
-                              {mode}
+                              {mode === 'small' ? 'S' : mode === 'medium' ? 'M' : mode === 'large' ? 'L' : 'XL'}
                             </button>
                           ))}
                         </div>
@@ -1099,6 +1105,8 @@ export default function PdfTools() {
                         ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2' 
                         : pageSizeMode === 'large'
                         ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'
+                        : pageSizeMode === 'extra-large'
+                        ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8 w-full'
                         : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'
                     }`}>
                       {imagePages.map((item, i) => (
@@ -1109,7 +1117,9 @@ export default function PdfTools() {
                           onDragOver={handleDragOver}
                           onDragEnd={handleDragEnd}
                           onDrop={e => handleDrop(e, i)}
-                          className={`relative rounded-xl border border-black/10 dark:border-white/10 p-2 bg-black/5 dark:bg-white/5 flex flex-col group cursor-grab active:cursor-grabbing transition-all duration-200 ${
+                          className={`relative rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex flex-col group cursor-grab active:cursor-grabbing transition-all duration-200 ${
+                            pageSizeMode === 'extra-large' ? 'p-4 shadow-xl border-primary-500/20' : 'p-2'
+                          } ${
                             draggedIndex === i ? 'opacity-40 scale-95 border-primary-500' : 'opacity-100 hover:border-black/25 dark:hover:border-white/25'
                           }`}
                         >
