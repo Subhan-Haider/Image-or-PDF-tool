@@ -8,7 +8,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![PDF-Lib](https://img.shields.io/badge/PDF--Lib-FF4B4B?style=for-the-badge&logo=adobe-acrobat-reader&logoColor=white)](https://pdf-lib.js.org/)
 
-**A powerful, privacy-first web application for processing images and PDF documents entirely in your browser.**
+**A powerful, premium web application for processing images and PDF documents entirely in your browser.**
 <br />
 *No files are ever uploaded to a server—everything runs locally using modern Web APIs.*
 
@@ -34,11 +34,13 @@
 
 ---
 
-## 🔒 100% Privacy Promise
+## 🔒 100% Privacy Promise & Architecture
 This entire suite of tools is designed to execute completely locally within the browser's virtualized sandbox via JavaScript and WebAssembly. 
-* **Zero Uploads**: No files, images, or metadata ever touch an external server.
+
+* **Zero Uploads**: Unlike traditional converters, no files, images, or metadata ever touch an external server.
 * **Zero Tracking**: Completely offline-capable processing after the initial page load.
-* **Highly Secure**: Ideal for confidential documents, IDs, and private photography.
+* **Highly Secure**: Ideal for confidential business documents, personal IDs, and private photography.
+* **Blazing Fast**: Because there are no network upload/download bottlenecks, conversions happen instantly using your device's CPU and RAM.
 
 ---
 
@@ -52,6 +54,37 @@ This entire suite of tools is designed to execute completely locally within the 
   * `pdf-lib` for reading, writing, and merging raw PDF bytes losslessly.
   * `pdf.js` (Mozilla) for rendering PDF pages to interactive DOM canvases.
 * **Image Engine**: Native HTML5 `<canvas>` API for high-performance pixel manipulation and compression.
+
+---
+
+## 📂 Project Structure
+
+```text
+Image-or-PDF-tool/
+├── public/                 # Static assets
+├── src/
+│   ├── components/         # Reusable UI components (Navbar, Footer)
+│   ├── pages/              # Main application views
+│   │   ├── Converter.tsx   # Image processing engine
+│   │   ├── PdfTools.tsx    # PDF processing & organizer engine
+│   │   ├── Home.tsx        # Landing page
+│   │   └── Features.tsx    # Features overview
+│   ├── App.tsx             # Main routing wrapper
+│   ├── index.css           # Global Tailwind & Glassmorphism styles
+│   └── main.tsx            # React DOM entry point
+├── package.json            # Dependencies and scripts
+├── tailwind.config.js      # Tailwind theme configuration
+└── vite.config.ts          # Vite build configuration
+```
+
+---
+
+## 🗺️ Roadmap & Upcoming Features
+
+- [ ] **Dark Mode Toggle**: Persistent system-preference synchronized theme switcher.
+- [ ] **PDF Password Protection**: Encrypt and decrypt PDFs directly in the browser.
+- [ ] **OCR (Text Extraction)**: Pull selectable text out of flat images using Tesseract.js.
+- [ ] **Bulk Watermarking**: Apply custom image/text watermarks across hundreds of pages instantly.
 
 ---
 
@@ -89,9 +122,8 @@ Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
 
 ---
 
-## 🤝 Contributing
-Contributions, issues, and feature requests are highly welcome! 
-Feel free to check the [issues page](https://github.com/Subhan-Haider/Image-or-PDF-tool/issues) if you want to contribute.
+## 📝 License & Copyright
 
-## 📝 License
-This project is [MIT](LICENSE) licensed.
+**Copyright (c) 2024 Subhan Haider. All Rights Reserved.**
+
+This is proprietary software. You may view and fork this repository for personal/educational evaluation, but commercial use, unauthorized distribution, or creating a competing product from this source code is strictly prohibited. See the [LICENSE](LICENSE) file for more details.
