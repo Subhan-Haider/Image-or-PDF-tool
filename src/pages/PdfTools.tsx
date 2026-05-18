@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, Minus, Upload, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2, Maximize2, Share2, Edit3, Type, PenTool, Highlighter, MousePointer2, Eraser, Undo, Redo, Save, X, EyeOff, Award } from 'lucide-react';
+import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, Minus, Upload, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2, Maximize2, Share2, Edit3, Type, PenTool, Highlighter, MousePointer2, Eraser, Undo, Redo, Save, X, EyeOff, Award, Check } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { useToast } from '../hooks/useToast';
@@ -2353,6 +2353,11 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   const [lastY, setLastY] = useState(0);
   const [savedImageData, setSavedImageData] = useState<ImageData | null>(null);
 
+  // Stamp placement dragging states
+  const [activeStamp, setActiveStamp] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [isDraggingStamp, setIsDraggingStamp] = useState(false);
+  const [dragStartOffset, setDragStartOffset] = useState({ x: 0, y: 0 });
+
   // Stamped item state
   const [stampedImage, setStampedImage] = useState<string | null>(null);
   const [showSignaturePad, setShowSignaturePad] = useState(false);
@@ -2538,14 +2543,15 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
 
     if (currentTool === 'image') {
       if (stampedImage) {
-        // Stamp custom image or signature at clicked location with adjustable stampScale
         const img = new Image();
         img.src = stampedImage;
         img.onload = () => {
-          const w = img.width * stampScale;
-          const h = img.height * stampScale;
-          ctx.drawImage(img, x - w / 2, y - h / 2, w, h);
-          pushStateToHistory();
+          setActiveStamp({
+            x,
+            y,
+            width: img.naturalWidth || 200,
+            height: img.naturalHeight || 80
+          });
         };
       }
       return;
@@ -2585,7 +2591,6 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   };
 
   const handleMovingDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
@@ -2593,6 +2598,17 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     const { x, y } = getCoordinates(e);
     setLastX(x);
     setLastY(y);
+
+    if (isDraggingStamp && activeStamp) {
+      setActiveStamp({
+        ...activeStamp,
+        x: x - dragStartOffset.x,
+        y: y - dragStartOffset.y
+      });
+      return;
+    }
+
+    if (!isDrawing) return;
 
     if (currentTool === 'shape') {
       if (savedImageData) {
@@ -2615,6 +2631,11 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   };
 
   const handleEndDraw = () => {
+    if (isDraggingStamp) {
+      setIsDraggingStamp(false);
+      return;
+    }
+
     if (!isDrawing) return;
     setIsDrawing(false);
 
@@ -2669,6 +2690,43 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     } catch (err) {
       console.error('Failed to apply pixelation overlay:', err);
     }
+  };
+
+  const handleStampDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsDraggingStamp(true);
+    
+    const canvas = canvasRef.current;
+    if (!canvas || !activeStamp) return;
+    
+    const { x, y } = getCoordinates(e as any);
+    setDragStartOffset({
+      x: x - activeStamp.x,
+      y: y - activeStamp.y
+    });
+  };
+
+  const finalizeStampPlacement = (e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    if (!activeStamp || !stampedImage) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const img = new Image();
+    img.src = stampedImage;
+    img.onload = () => {
+      const w = activeStamp.width * stampScale;
+      const h = activeStamp.height * stampScale;
+      ctx.drawImage(img, activeStamp.x - w / 2, activeStamp.y - h / 2, w, h);
+      pushStateToHistory();
+      setActiveStamp(null);
+      notify('Stamp placed permanently! ✓', 'success');
+    };
   };
 
   const drawShapePreview = (ctx: CanvasRenderingContext2D, sX: number, sY: number, eX: number, eY: number) => {
@@ -3286,6 +3344,52 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                       className="bg-slate-900 text-white border border-primary-500 rounded px-2 py-1 text-sm shadow-xl focus:outline-none focus:ring-2 focus:ring-primary-500 font-semibold translate-y-[-10%]"
                       style={{ color: color, fontSize: `min(18px, ${lineWidth * 1.8}px)` }}
                     />
+                  </div>
+                )}
+
+                {/* Drag-and-place active stamp overlay */}
+                {activeStamp && stampedImage && (
+                  <div 
+                    className="absolute z-50 select-none cursor-move border-2 border-dashed border-primary-500 rounded-lg p-1 bg-primary-500/5 group"
+                    style={{
+                      left: `${(activeStamp.x / canvasDimensions.width) * 100}%`,
+                      top: `${(activeStamp.y / canvasDimensions.height) * 100}%`,
+                      width: `${((activeStamp.width * stampScale) / canvasDimensions.width) * 100}%`,
+                      height: `${((activeStamp.height * stampScale) / canvasDimensions.height) * 100}%`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                    onMouseDown={handleStampDragStart}
+                    onTouchStart={handleStampDragStart}
+                    onDoubleClick={() => finalizeStampPlacement()}
+                  >
+                    <img 
+                      src={stampedImage} 
+                      alt="Active Stamp"
+                      className="w-full h-full object-contain pointer-events-none"
+                    />
+                    
+                    {/* Position action controls floating above active stamp */}
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-900 border border-white/10 rounded-lg px-1.5 py-0.5 shadow-xl shrink-0 whitespace-nowrap opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
+                      <span className="text-[9px] text-slate-300 font-medium px-1 mr-1 border-r border-white/10">Drag to Position</span>
+                      <button
+                        onClick={(e) => finalizeStampPlacement(e)}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white rounded p-0.5 hover:scale-105 transition-all"
+                        title="Place Stamp"
+                      >
+                        <Check size={10} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setActiveStamp(null);
+                        }}
+                        className="bg-red-500 hover:bg-red-600 text-white rounded p-0.5 hover:scale-105 transition-all"
+                        title="Delete Stamp"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
