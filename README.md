@@ -83,8 +83,13 @@ Image-or-PDF-tool/
 
 - [ ] **Dark Mode Toggle**: Persistent system-preference synchronized theme switcher.
 - [ ] **PDF Password Protection**: Encrypt and decrypt PDFs directly in the browser.
-- [ ] **OCR (Text Extraction)**: Pull selectable text out of flat images using Tesseract.js.
+- [ ] **OCR (Text Extraction)**: Pull selectable text out of flat images using client-side WebAssembly models.
 - [ ] **Bulk Watermarking**: Apply custom image/text watermarks across hundreds of pages instantly.
+- [ ] **Image Filters & Effects**: Adjust brightness, contrast, saturation, and apply professional LUT filters locally.
+- [ ] **Digital Signatures**: Sign PDF documents cryptographically directly in your browser.
+- [ ] **EXIF Metadata Editor**: View, strip, or modify hidden EXIF metadata (GPS, camera info) from images.
+- [ ] **AI Background Removal**: Automatically remove image backgrounds using local ONNX machine learning models.
+- [ ] **PDF Redaction**: Securely black out sensitive information and burn it into the document so it cannot be recovered.
 
 ---
 
