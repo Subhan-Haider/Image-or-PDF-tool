@@ -667,7 +667,7 @@ export default function PdfTools() {
             {(['editor', 'to-images', 'from-images', 'office-to-pdf'] as const).map(tab => {
               const active = activeTab === tab;
               const labels = {
-                'editor': { text: 'PDF Organizer / Merger', mobileText: 'Organizer', icon: Layers },
+                'editor': { text: 'PDF Organizer', mobileText: 'Organizer', icon: Layers },
                 'to-images': { text: 'PDF to Images', mobileText: 'PDF to Img', icon: FileImage },
                 'from-images': { text: 'Images to PDF', mobileText: 'Img to PDF', icon: ImageIcon },
                 'office-to-pdf': { text: 'Office to PDF', mobileText: 'Office converter', icon: FileText }
