@@ -1,5 +1,5 @@
-import { useCallback, useState, useEffect } from 'react';
-import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2, Maximize2, Share2, Edit3, Type, PenTool, Highlighter, MousePointer2, Eraser } from 'lucide-react';
+import { useCallback, useState, useEffect, useRef } from 'react';
+import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2, Maximize2, Share2, Edit3, Type, PenTool, Highlighter, MousePointer2, Eraser, Undo, Redo, Save, X } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { useToast } from '../hooks/useToast';
@@ -83,6 +83,24 @@ export default function PdfTools() {
   const closeZoom = () => setZoomGallery(null);
   const zoomNext = () => setZoomGallery(prev => prev && prev.index < prev.images.length - 1 ? { ...prev, index: prev.index + 1 } : prev);
   const zoomPrev = () => setZoomGallery(prev => prev && prev.index > 0 ? { ...prev, index: prev.index - 1 } : prev);
+
+  // --- Canvas Editor Modal State ---
+  const [activeEditPage, setActiveEditPage] = useState<{ page: PdfPageItem; index: number } | null>(null);
+  const openEditorModal = (page: PdfPageItem, index: number) => setActiveEditPage({ page, index });
+  const closeEditorModal = () => setActiveEditPage(null);
+
+  const handleSavePageEdits = (editedFile: File, editedThumbnail: string) => {
+    if (!activeEditPage) return;
+    const newPages = [...pdfPages];
+    newPages[activeEditPage.index] = {
+      ...newPages[activeEditPage.index],
+      file: editedFile,
+      thumbnail: editedThumbnail
+    };
+    setPdfPages(newPages);
+    setActiveEditPage(null);
+    notify('Page edits applied successfully ✓', 'success');
+  };
 
   // --- Drag and Drop Reordering State ---
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -1201,10 +1219,18 @@ export default function PdfTools() {
                               <button 
                                 type="button"
                                 onClick={() => openZoom(pdfPages.map(p => p.thumbnail), i)}
-                                className="p-1.5 rounded-md bg-white/10 text-white hover:bg-primary-500 hover:text-white transition-all animate-pulse"
+                                className="p-1.5 rounded-md bg-white/10 text-white hover:bg-primary-500 hover:text-white transition-all"
                                 title="Zoom Page"
                               >
                                 <Maximize2 size={12} />
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => openEditorModal(page, i)}
+                                className="p-1.5 rounded-md bg-white/10 text-white hover:bg-emerald-500 hover:text-white transition-all animate-pulse"
+                                title="Edit Page (Add Text, Draw, Shapes, Sign, Image)"
+                              >
+                                <Edit3 size={12} />
                               </button>
                               <button 
                                 type="button"
@@ -2253,6 +2279,647 @@ export default function PdfTools() {
           )}
         </div>
       )}
+
+      {activeEditPage && (
+        <CanvasEditorModal 
+          page={activeEditPage.page}
+          index={activeEditPage.index}
+          onClose={closeEditorModal}
+          onSave={handleSavePageEdits}
+        />
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// 🎨 Client-Side Interactive PDF Canvas Editor
+// ==========================================
+
+interface CanvasEditorModalProps {
+  page: PdfPageItem;
+  index: number;
+  onClose: () => void;
+  onSave: (editedFile: File, editedThumbnail: string) => void;
+}
+
+type EditTool = 'draw' | 'highlight' | 'text' | 'shape' | 'signature' | 'image' | 'erase';
+
+function CanvasEditorModal({ page, index, onClose, onSave }: CanvasEditorModalProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const sigCanvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [currentTool, setCurrentTool] = useState<EditTool>('draw');
+  const [color, setColor] = useState('#3b82f6'); // Default primary blue
+  const [lineWidth, setLineWidth] = useState(8);
+  const [shapeType, setShapeType] = useState<'rect' | 'circle' | 'arrow'>('rect');
+  
+  // Drawing states
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [savedImageData, setSavedImageData] = useState<ImageData | null>(null);
+
+  // Stamped item state
+  const [stampedImage, setStampedImage] = useState<string | null>(null);
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [sigIsDrawing, setSigIsDrawing] = useState(false);
+
+  // Text Tool Overlay State
+  const [textInput, setTextInput] = useState<{ x: number; y: number; val: string } | null>(null);
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 600, height: 800 });
+
+  // Undo/Redo Stacks
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // Initial Load of original page thumbnail
+  useEffect(() => {
+    const img = new Image();
+    img.src = page.thumbnail;
+    img.onload = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      setCanvasDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      ctx.drawImage(img, 0, 0);
+      
+      const initialData = canvas.toDataURL('image/png');
+      setHistory([initialData]);
+      setHistoryIndex(0);
+    };
+  }, [page.thumbnail]);
+
+  // Push Canvas State to Undo History Stack
+  const pushStateToHistory = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    const cleanHistory = history.slice(0, historyIndex + 1);
+    cleanHistory.push(dataUrl);
+    setHistory(cleanHistory);
+    setHistoryIndex(cleanHistory.length - 1);
+  };
+
+  const undo = () => {
+    if (historyIndex <= 0) return;
+    const prevIdx = historyIndex - 1;
+    restoreHistoryState(prevIdx);
+  };
+
+  const redo = () => {
+    if (historyIndex >= history.length - 1) return;
+    const nextIdx = historyIndex + 1;
+    restoreHistoryState(nextIdx);
+  };
+
+  const restoreHistoryState = (idx: number) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const img = new Image();
+    img.src = history[idx];
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      setHistoryIndex(idx);
+    };
+  };
+
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    
+    let clientX, clientY;
+    if ('touches' in e) {
+      if (e.touches.length === 0) return { x: 0, y: 0 };
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  };
+
+  // Main Canvas Event Handlers
+  const handleStartDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (textInput) {
+      finalizeText();
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const { x, y } = getCoordinates(e);
+
+    if (currentTool === 'image') {
+      if (stampedImage) {
+        // Stamp custom image or signature at clicked location
+        const img = new Image();
+        img.src = stampedImage;
+        img.onload = () => {
+          const maxWidth = canvas.width * 0.35;
+          const scale = Math.min(1, maxWidth / img.width);
+          const w = img.width * scale;
+          const h = img.height * scale;
+          ctx.drawImage(img, x - w / 2, y - h / 2, w, h);
+          pushStateToHistory();
+        };
+      }
+      return;
+    }
+
+    if (currentTool === 'text') {
+      setTextInput({ x, y, val: '' });
+      return;
+    }
+
+    setIsDrawing(true);
+    setStartX(x);
+    setStartY(y);
+
+    // Capture clean canvas state for shape overlays
+    if (currentTool === 'shape') {
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      setSavedImageData(imgData);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineWidth = lineWidth;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (currentTool === 'erase') {
+        ctx.strokeStyle = '#ffffff';
+        ctx.globalCompositeOperation = 'source-over';
+      } else if (currentTool === 'highlight') {
+        ctx.strokeStyle = hexToRgba(color, 0.45);
+        ctx.globalCompositeOperation = 'source-over';
+      } else {
+        ctx.strokeStyle = color;
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+  };
+
+  const handleMovingDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const { x, y } = getCoordinates(e);
+
+    if (currentTool === 'shape') {
+      if (savedImageData) {
+        ctx.putImageData(savedImageData, 0, 0);
+        drawShapePreview(ctx, startX, startY, x, y);
+      }
+    } else {
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+  };
+
+  const handleEndDraw = () => {
+    if (!isDrawing) return;
+    setIsDrawing(false);
+    setSavedImageData(null);
+    pushStateToHistory();
+  };
+
+  const drawShapePreview = (ctx: CanvasRenderingContext2D, sX: number, sY: number, eX: number, eY: number) => {
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    
+    if (shapeType === 'rect') {
+      ctx.strokeRect(sX, sY, eX - sX, eY - sY);
+    } else if (shapeType === 'circle') {
+      const radius = Math.sqrt(Math.pow(eX - sX, 2) + Math.pow(eY - sY, 2));
+      ctx.beginPath();
+      ctx.arc(sX, sY, radius, 0, 2 * Math.PI);
+      ctx.stroke();
+    } else if (shapeType === 'arrow') {
+      ctx.beginPath();
+      ctx.moveTo(sX, sY);
+      ctx.lineTo(eX, eY);
+      ctx.stroke();
+      
+      const angle = Math.atan2(eY - sY, eX - sX);
+      const headLength = Math.max(15, lineWidth * 3);
+      ctx.beginPath();
+      ctx.moveTo(eX, eY);
+      ctx.lineTo(eX - headLength * Math.cos(angle - Math.PI / 6), eY - headLength * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(eX - headLength * Math.cos(angle + Math.PI / 6), eY - headLength * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    }
+  };
+
+  const finalizeText = () => {
+    if (!textInput) return;
+    if (textInput.val.trim() !== '') {
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (canvas && ctx) {
+        ctx.font = `${lineWidth * 2.5}px Inter, system-ui, sans-serif`;
+        ctx.fillStyle = color;
+        ctx.textBaseline = 'top';
+        ctx.fillText(textInput.val, textInput.x, textInput.y);
+        pushStateToHistory();
+      }
+    }
+    setTextInput(null);
+  };
+
+  const hexToRgba = (hex: string, alpha: number) => {
+    let c = hex.substring(1);
+    if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+    const r = parseInt(c.substring(0, 2), 16);
+    const g = parseInt(c.substring(2, 4), 16);
+    const b = parseInt(c.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  // Image Stamp Trigger File Upload
+  const handleCustomImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setStampedImage(event.target.result as string);
+        setCurrentTool('image');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Signature pad handlers
+  const handleSigMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = sigCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    
+    setSigIsDrawing(true);
+    const rect = canvas.getBoundingClientRect();
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#000000';
+    ctx.lineCap = 'round';
+  };
+
+  const handleSigMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!sigIsDrawing) return;
+    const canvas = sigCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const clearSignature = () => {
+    const canvas = sigCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  const insertSignature = () => {
+    const canvas = sigCanvasRef.current;
+    if (!canvas) return;
+
+    // Check if signature canvas is empty
+    const blank = document.createElement('canvas');
+    blank.width = canvas.width;
+    blank.height = canvas.height;
+    if (canvas.toDataURL() === blank.toDataURL()) {
+      setShowSignaturePad(false);
+      return;
+    }
+
+    const dataUrl = canvas.toDataURL('image/png');
+    setStampedImage(dataUrl);
+    setCurrentTool('image');
+    setShowSignaturePad(false);
+  };
+
+  // Save finalized canvas back as standard File PNG object
+  const handleFinalSave = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const editedFile = new File([blob], page.fileName, { type: 'image/png' });
+      const editedThumbnail = canvas.toDataURL('image/png');
+      onSave(editedFile, editedThumbnail);
+    }, 'image/png');
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+      <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col w-full max-w-6xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+        
+        {/* Modal Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-slate-900/50">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Basic Page Annotator</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Annotating Page {index + 1} of {page.fileName}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-xl bg-white/5 hover:bg-red-500 hover:text-white text-slate-400 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Modal Work Environment */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+          
+          {/* Side Toolbar Panel */}
+          <div className="md:w-64 border-r border-white/5 bg-slate-900/40 p-4 space-y-5 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible shrink-0 gap-4 md:gap-0">
+            
+            {/* Quick Tools */}
+            <div className="space-y-2 w-full">
+              <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold hidden md:block">Interactive Tools</span>
+              <div className="grid grid-cols-4 md:grid-cols-2 gap-1.5 w-full">
+                {(['draw', 'highlight', 'text', 'shape', 'signature', 'image', 'erase'] as const).map(tool => {
+                  const active = currentTool === tool;
+                  const icons = {
+                    draw: PenTool,
+                    highlight: Highlighter,
+                    text: Type,
+                    shape: MousePointer2,
+                    signature: Edit3,
+                    image: ImageIcon,
+                    erase: Eraser
+                  };
+                  const labels = {
+                    draw: 'Draw',
+                    highlight: 'Highlight',
+                    text: 'Add Text',
+                    shape: 'Shapes',
+                    signature: 'Signature',
+                    image: 'Stamp Image',
+                    erase: 'Whiteout'
+                  };
+                  const Icon = icons[tool];
+                  return (
+                    <button
+                      key={tool}
+                      onClick={() => {
+                        setCurrentTool(tool);
+                        if (tool === 'signature') {
+                          setShowSignaturePad(true);
+                        } else if (tool === 'image') {
+                          fileInputRef.current?.click();
+                        }
+                      }}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl border text-[10px] font-medium transition-all ${
+                        active 
+                          ? 'bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/20' 
+                          : 'border-white/5 bg-white/5 text-slate-300 hover:bg-white/10'
+                      }`}
+                      title={labels[tool]}
+                    >
+                      <Icon size={16} />
+                      <span className="mt-1 font-semibold truncate hidden md:inline">{labels[tool]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Shape Sub-menu */}
+            {currentTool === 'shape' && (
+              <div className="space-y-1.5 w-full border-t border-white/5 pt-3 hidden md:block">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Shape Style</span>
+                <div className="flex gap-1">
+                  {(['rect', 'circle', 'arrow'] as const).map(shape => (
+                    <button
+                      key={shape}
+                      onClick={() => setShapeType(shape)}
+                      className={`flex-1 py-1 px-2 text-[10px] font-semibold border rounded-lg transition-all ${
+                        shapeType === shape 
+                          ? 'bg-slate-700 border-primary-500 text-white' 
+                          : 'border-white/5 bg-white/5 text-slate-300 hover:bg-white/10'
+                      }`}
+                    >
+                      {shape === 'rect' ? 'Square' : shape === 'circle' ? 'Circle' : 'Arrow'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Colors */}
+            <div className="space-y-1.5 w-full border-t border-white/5 pt-3 shrink-0">
+              <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold hidden md:block">Stroke Color</span>
+              <div className="flex flex-wrap gap-1.5">
+                {['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#000000', '#ffffff'].map(c => (
+                  <button
+                    key={c}
+                    onClick={() => setColor(c)}
+                    className={`w-6 h-6 rounded-full border-2 transition-all ${
+                      color === c ? 'border-white scale-110 shadow-lg' : 'border-white/10'
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Line Width */}
+            <div className="space-y-1.5 w-full border-t border-white/5 pt-3 hidden md:block">
+              <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
+                <span>Brush / Font Size</span>
+                <span>{lineWidth}px</span>
+              </div>
+              <input 
+                type="range" 
+                min={2} 
+                max={40} 
+                value={lineWidth} 
+                onChange={e => setLineWidth(Number(e.target.value))}
+                className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary-500" 
+              />
+            </div>
+
+            {/* Stamped image reset option */}
+            {currentTool === 'image' && stampedImage && (
+              <button 
+                onClick={() => { setStampedImage(null); setCurrentTool('draw'); }}
+                className="btn-base bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-3 py-1.5 text-xs rounded-xl w-full text-center font-semibold border border-red-500/20"
+              >
+                Clear Stamp Design
+              </button>
+            )}
+
+          </div>
+
+          {/* Interactive Draw Environment */}
+          <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden select-none">
+            <div className="relative border border-white/10 rounded-xl shadow-2xl bg-white max-h-[68vh] aspect-[3/4] flex items-center justify-center overflow-hidden">
+              <canvas
+                ref={canvasRef}
+                onMouseDown={handleStartDraw}
+                onMouseMove={handleMovingDraw}
+                onMouseUp={handleEndDraw}
+                onMouseLeave={handleEndDraw}
+                onTouchStart={handleStartDraw}
+                onTouchMove={handleMovingDraw}
+                onTouchEnd={handleEndDraw}
+                className="max-h-[67vh] max-w-full object-contain cursor-crosshair rounded-lg"
+              />
+
+              {/* Text Tool Absolute Overlay Input */}
+              {textInput && (
+                <div 
+                  className="absolute z-40 bg-transparent flex items-center justify-center"
+                  style={{
+                    left: `${(textInput.x / canvasDimensions.width) * 100}%`,
+                    top: `${(textInput.y / canvasDimensions.height) * 100}%`,
+                  }}
+                >
+                  <input
+                    autoFocus
+                    type="text"
+                    value={textInput.val}
+                    onChange={e => setTextInput(prev => prev ? { ...prev, val: e.target.value } : null)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') finalizeText();
+                      if (e.key === 'Escape') setTextInput(null);
+                    }}
+                    onBlur={finalizeText}
+                    placeholder="Type here..."
+                    className="bg-slate-900 text-white border border-primary-500 rounded px-2 py-1 text-sm shadow-xl focus:outline-none focus:ring-2 focus:ring-primary-500 font-semibold"
+                    style={{ color: color, fontSize: `min(18px, ${lineWidth * 1.8}px)` }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Hidden inputs & overlays */}
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          accept="image/*" 
+          onChange={handleCustomImageUpload} 
+          className="hidden" 
+        />
+
+        {/* Floating Signature Canvas Dialog */}
+        {showSignaturePad && (
+          <div className="fixed inset-0 z-60 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl p-5 w-full max-w-md">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-semibold text-white">Draw your signature</h4>
+                <button onClick={() => setShowSignaturePad(false)} className="text-slate-400 hover:text-white">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="border border-white/15 rounded-xl bg-white overflow-hidden mb-4">
+                <canvas
+                  ref={sigCanvasRef}
+                  width={400}
+                  height={180}
+                  onMouseDown={handleSigMouseDown}
+                  onMouseMove={handleSigMouseMove}
+                  onMouseUp={() => setSigIsDrawing(false)}
+                  onMouseLeave={() => setSigIsDrawing(false)}
+                  className="w-full cursor-pencil bg-white"
+                />
+              </div>
+              <div className="flex justify-between gap-3">
+                <button 
+                  onClick={clearSignature}
+                  className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                >
+                  Clear Signature
+                </button>
+                <button 
+                  onClick={insertSignature}
+                  className="px-4 py-2 text-xs font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-xl transition-colors"
+                >
+                  Stamp Signature
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Footer controls: Undo / Redo / Reset / Save */}
+        <div className="px-6 py-4 border-t border-white/5 bg-slate-900/80 flex items-center justify-between">
+          <div className="flex gap-2">
+            <button 
+              onClick={undo}
+              disabled={historyIndex <= 0}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              title="Undo Last action"
+            >
+              <Undo size={16} />
+            </button>
+            <button 
+              onClick={redo}
+              disabled={historyIndex >= history.length - 1}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              title="Redo action"
+            >
+              <Redo size={16} />
+            </button>
+            <button 
+              onClick={() => restoreHistoryState(0)}
+              className="p-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 text-xs font-bold transition-all"
+              title="Reset all edits"
+            >
+              Reset Page
+            </button>
+          </div>
+          
+          <div className="flex gap-3">
+            <button 
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold transition-all"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleFinalSave}
+              className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition-all"
+            >
+              <Save size={14} /> Apply Changes
+            </button>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
