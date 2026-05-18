@@ -2489,6 +2489,14 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     };
   };
 
+  const getVisualScale = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return 1;
+    const rect = canvas.getBoundingClientRect();
+    const unzoomedWidth = rect.width / zoomLevel;
+    return canvas.width / unzoomedWidth;
+  };
+
   // Main Canvas Event Handlers
   const handleStartDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -2557,7 +2565,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     } else {
       ctx.beginPath();
       ctx.moveTo(x, y);
-      ctx.lineWidth = lineWidth;
+      ctx.lineWidth = lineWidth * getVisualScale();
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
@@ -2762,7 +2770,8 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   };
 
   const drawShapePreview = (ctx: CanvasRenderingContext2D, sX: number, sY: number, eX: number, eY: number) => {
-    ctx.lineWidth = lineWidth;
+    const scale = getVisualScale();
+    ctx.lineWidth = lineWidth * scale;
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
 
@@ -2780,7 +2789,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
       ctx.stroke();
 
       const angle = Math.atan2(eY - sY, eX - sX);
-      const headLength = Math.max(15, lineWidth * 3);
+      const headLength = Math.max(15 * scale, ctx.lineWidth * 3);
       ctx.beginPath();
       ctx.moveTo(eX, eY);
       ctx.lineTo(eX - headLength * Math.cos(angle - Math.PI / 6), eY - headLength * Math.sin(angle - Math.PI / 6));
@@ -2796,7 +2805,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
       if (canvas && ctx) {
-        ctx.font = `${lineWidth * 2.5}px Inter, system-ui, sans-serif`;
+        ctx.font = `${lineWidth * 2.5 * getVisualScale()}px Inter, system-ui, sans-serif`;
         ctx.fillStyle = color;
         ctx.textBaseline = 'top';
         ctx.fillText(textInput.val, textInput.x, textInput.y);
@@ -3339,7 +3348,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
               className="relative border border-white/10 rounded-xl shadow-2xl bg-white max-h-[68vh] aspect-[3/4] flex items-center justify-center overflow-visible transition-transform duration-100 ease-out origin-center"
               style={{ transform: `scale(${zoomLevel})` }}
             >
-              <div className="relative max-h-[67vh] max-w-full">
+              <div className="relative max-h-[67vh] max-w-full w-fit h-fit">
                 <canvas
                   ref={canvasRef}
                   onMouseDown={handleStartDraw}
