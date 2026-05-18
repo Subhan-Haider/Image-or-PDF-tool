@@ -4,6 +4,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
+import { uploadFileToServer } from '../utils/uploader';
 
 interface PdfPageItem {
   id: string;
@@ -71,11 +72,11 @@ export default function PdfTools() {
   const [compressFile, setCompressFile] = useState<File | null>(null);
   const [compressMode, setCompressMode] = useState<'low' | 'medium' | 'high' | 'preserve'>('medium');
   const [compressProgress, setCompressProgress] = useState<{ current: number; total: number; currentSize: number } | null>(null);
-  const [compressResult, setCompressResult] = useState<{ originalSize: number; compressedSize: number; downloadUrl: string; filename: string } | null>(null);
+  const [compressResult, setCompressResult] = useState<{ originalSize: number; compressedSize: number; downloadUrl: string; filename: string; serverUrl?: string } | null>(null);
 
   // --- Compiled PDF Result State (PDF Organizer + Images to PDF) ---
-  const [compiledPdfResult, setCompiledPdfResult] = useState<{ url: string; filename: string } | null>(null);
-  const [compiledImagesPdfResult, setCompiledImagesPdfResult] = useState<{ url: string; filename: string } | null>(null);
+  const [compiledPdfResult, setCompiledPdfResult] = useState<{ url: string; filename: string; serverUrl?: string } | null>(null);
+  const [compiledImagesPdfResult, setCompiledImagesPdfResult] = useState<{ url: string; filename: string; serverUrl?: string } | null>(null);
 
   // --- Zoom Modal / Gallery State ---
   const [zoomGallery, setZoomGallery] = useState<{ images: string[]; index: number } | null>(null);
@@ -298,6 +299,16 @@ export default function PdfTools() {
         compressedSize: compressedBlob.size,
         downloadUrl,
         filename
+      });
+
+      // Background upload of compressed PDF to storage server
+      const compressedFile = new File([compressedBlob], filename, { type: 'application/pdf' });
+      uploadFileToServer(compressedFile).then(url => {
+        if (url) {
+          setCompressResult(prev => prev ? { ...prev, serverUrl: url } : null);
+        }
+      }).catch(err => {
+        console.warn('Background upload of compressed PDF failed:', err);
       });
 
       notify('PDF successfully compressed ✓', 'success');
@@ -881,6 +892,17 @@ export default function PdfTools() {
 
       // Store result for Download/Share buttons instead of auto-downloading
       setCompiledPdfResult({ url, filename });
+
+      // Background upload of compiled PDF to storage server
+      const compiledFile = new File([blob], filename, { type: 'application/pdf' });
+      uploadFileToServer(compiledFile).then(url => {
+        if (url) {
+          setCompiledPdfResult(prev => prev ? { ...prev, serverUrl: url } : null);
+        }
+      }).catch(err => {
+        console.warn('Background upload of compiled PDF failed:', err);
+      });
+
       notify('PDF compiled successfully! Click Download or Share below ✓', 'success');
     } catch (err: any) {
       notify(`PDF compilation failed: ${err.message}`, 'error');
@@ -960,6 +982,16 @@ export default function PdfTools() {
 
         // Store result for Download/Share buttons
         setCompiledImagesPdfResult({ url, filename });
+
+        // Background upload of compiled images PDF to storage server
+        const compiledImagesFile = new File([blob], filename, { type: 'application/pdf' });
+        uploadFileToServer(compiledImagesFile).then(url => {
+          if (url) {
+            setCompiledImagesPdfResult(prev => prev ? { ...prev, serverUrl: url } : null);
+          }
+        }).catch(err => {
+          console.warn('Background upload of compiled images PDF failed:', err);
+        });
       } else {
         // Fallback to classic jsPDF engine
         let doc: any = null;

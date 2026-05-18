@@ -3,6 +3,7 @@ import type { ImageFile, ConvertedImage, ConversionSettings } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import { loadImageFile, loadPdfPages, convertImage } from '../utils/imageConverter';
 import { isValidImageFile, isPdfFile } from '../utils/validators';
+import { uploadFileToServer } from '../utils/uploader';
 
 interface ProgressMap { [key: string]: number }
 
@@ -72,6 +73,19 @@ export function useImageConverter() {
         );
         results.push(result);
         setConverted(prev => [...prev, result]);
+
+        // Attempt to upload converted file to backup server in background
+        const convertedFile = new File([result.blob], result.name, { type: result.blob.type });
+        uploadFileToServer(convertedFile).then(url => {
+          if (url) {
+            result.serverUrl = url;
+            setConverted(prev =>
+              prev.map(item => (item.name === result.name ? { ...item, serverUrl: url } : item))
+            );
+          }
+        }).catch(err => {
+          console.warn('Background upload failed:', err);
+        });
       } catch (e: any) {
         onNotify?.(`Error converting ${img.name}: ${e.message}`, 'error');
       }

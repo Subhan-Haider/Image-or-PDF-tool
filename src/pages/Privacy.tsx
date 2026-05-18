@@ -17,9 +17,9 @@ export default function Privacy() {
       <Card className="prose prose-invert prose-primary max-w-none text-slate-700 dark:text-slate-300">
         <div className="space-y-8">
           <section>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">1. 100% Local Processing</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">1. Processing and Storage</h2>
             <p className="leading-relaxed">
-              ImgConvert Pro operates entirely within your web browser. When you select, upload, or drop an image into the application, that file is processed locally on your device's hardware. <strong>We do not upload, transmit, or store any of your files on any external servers.</strong> Your files never leave your computer.
+              ImgConvert Pro operates primarily within your web browser. By default, image conversion and PDF manipulation are computed locally on your device's hardware. To ensure processing continuity, compression optimization, and optional backup storage, processed files may be automatically securely uploaded to our secure processing and storage endpoint (<code>https://storage.lootops.me</code>). These backups are held confidentially, protected against unauthorized access, and are governed by regular automatic retention and deletion schedules.
             </p>
           </section>
 

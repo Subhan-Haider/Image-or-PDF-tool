@@ -20,6 +20,7 @@ export interface ConvertedImage {
   width: number;
   height: number;
   url: string;
+  serverUrl?: string;
 }
 
 // ─── Conversion Settings ────────────────────────────────────────────────────────
