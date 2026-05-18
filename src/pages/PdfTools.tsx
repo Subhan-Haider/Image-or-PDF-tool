@@ -66,6 +66,47 @@ export default function PdfTools() {
   // --- Grid View Zoom State ---
   const [pageSizeMode, setPageSizeMode] = useState<'small' | 'medium' | 'large'>('medium');
 
+  // --- Drag and Drop Reordering State ---
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === targetIndex) return;
+
+    if (activeTab === 'editor') {
+      setPdfPages(prev => {
+        const next = [...prev];
+        const [moved] = next.splice(draggedIndex, 1);
+        next.splice(targetIndex, 0, moved);
+        return next;
+      });
+      notify('Page position updated ✓', 'success');
+    } else if (activeTab === 'from-images') {
+      setImagePages(prev => {
+        const next = [...prev];
+        const [moved] = next.splice(draggedIndex, 1);
+        next.splice(targetIndex, 0, moved);
+        return next;
+      });
+      notify('Image position updated ✓', 'success');
+    }
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   // --- Common Helpers ---
   const clearWorkspace = () => {
     setPdfPages([]);
@@ -840,7 +881,14 @@ export default function PdfTools() {
                       {pdfPages.map((page, i) => (
                         <div 
                           key={page.id} 
-                          className="relative rounded-xl border border-black/10 dark:border-white/10 p-2 bg-black/5 dark:bg-white/5 flex flex-col group"
+                          draggable
+                          onDragStart={e => handleDragStart(e, i)}
+                          onDragOver={handleDragOver}
+                          onDragEnd={handleDragEnd}
+                          onDrop={e => handleDrop(e, i)}
+                          className={`relative rounded-xl border border-black/10 dark:border-white/10 p-2 bg-black/5 dark:bg-white/5 flex flex-col group cursor-grab active:cursor-grabbing transition-all duration-200 ${
+                            draggedIndex === i ? 'opacity-40 scale-95 border-primary-500' : 'opacity-100 hover:border-black/25 dark:hover:border-white/25'
+                          }`}
                         >
                           {/* Mini Page index Badge */}
                           <div className="absolute top-3 left-3 z-10 px-2 py-0.5 rounded-full bg-slate-900/80 text-white text-xs font-semibold">
@@ -1051,7 +1099,17 @@ export default function PdfTools() {
                         : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'
                     }`}>
                       {imagePages.map((item, i) => (
-                        <div key={item.id} className="relative rounded-xl border border-black/10 dark:border-white/10 p-2 bg-black/5 dark:bg-white/5 flex flex-col group">
+                        <div 
+                          key={item.id} 
+                          draggable
+                          onDragStart={e => handleDragStart(e, i)}
+                          onDragOver={handleDragOver}
+                          onDragEnd={handleDragEnd}
+                          onDrop={e => handleDrop(e, i)}
+                          className={`relative rounded-xl border border-black/10 dark:border-white/10 p-2 bg-black/5 dark:bg-white/5 flex flex-col group cursor-grab active:cursor-grabbing transition-all duration-200 ${
+                            draggedIndex === i ? 'opacity-40 scale-95 border-primary-500' : 'opacity-100 hover:border-black/25 dark:hover:border-white/25'
+                          }`}
+                        >
                           <div className="absolute top-3 left-3 z-10 px-2 py-0.5 rounded-full bg-slate-900/80 text-white text-xs font-semibold">
                             Img {i + 1}
                           </div>
