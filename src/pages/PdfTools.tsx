@@ -3247,16 +3247,16 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
             </div>
 
             {/* Stamp Image scale adjustment slider */}
-            {currentTool === 'image' && stampedImage && (
+            {stampedImage && (
               <div className="space-y-1.5 w-full border-t border-white/5 pt-3 hidden md:block">
                 <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
-                  <span>Stamp Size Scale</span>
+                  <span>Stamp/Object Size</span>
                   <span>{Math.round(stampScale * 100)}%</span>
                 </div>
                 <input
                   type="range"
                   min={0.05}
-                  max={1.5}
+                  max={2.5}
                   step={0.05}
                   value={stampScale}
                   onChange={e => setStampScale(Number(e.target.value))}
@@ -3266,12 +3266,12 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
             )}
 
             {/* Stamped image reset option */}
-            {currentTool === 'image' && stampedImage && (
+            {stampedImage && (
               <button
-                onClick={() => { setStampedImage(null); setCurrentTool('draw'); }}
-                className="btn-base bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-3 py-1.5 text-xs rounded-xl w-full text-center font-semibold border border-red-500/20"
+                onClick={() => { setStampedImage(null); setActiveStamp(null); setCurrentTool('draw'); }}
+                className="btn-base bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-3 py-1.5 text-xs rounded-xl w-full text-center font-semibold border border-red-500/20 mt-2 block"
               >
-                Clear Stamp Design
+                Clear Selected Object
               </button>
             )}
 
@@ -3364,14 +3364,48 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                     />
 
                     {/* Position action controls floating above active stamp */}
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-900 border border-white/10 rounded-lg px-1.5 py-0.5 shadow-xl shrink-0 whitespace-nowrap opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
-                      <span className="text-[9px] text-slate-300 font-medium px-1 mr-1 border-r border-white/10">Drag to Position</span>
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-slate-900 border border-white/20 rounded-xl px-2.5 py-1 shadow-2xl shrink-0 whitespace-nowrap opacity-100 transition-opacity pointer-events-auto z-[60]">
+                      <span className="text-[10px] text-slate-300 font-semibold px-1 mr-1 border-r border-white/10">Drag to Position</span>
+                      
+                      {/* Decrease Size Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setStampScale(prev => Math.max(0.05, prev - 0.05));
+                        }}
+                        className="bg-white/10 hover:bg-white/20 text-white rounded p-1 transition-colors hover:scale-105"
+                        title="Decrease Size"
+                      >
+                        <Minus size={11} />
+                      </button>
+
+                      {/* Scale display */}
+                      <span className="text-[10px] text-primary-400 font-bold min-w-[32px] text-center font-mono">
+                        {Math.round(stampScale * 100)}%
+                      </span>
+
+                      {/* Increase Size Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setStampScale(prev => Math.min(2.5, prev + 0.05));
+                        }}
+                        className="bg-white/10 hover:bg-white/20 text-white rounded p-1 transition-colors hover:scale-105"
+                        title="Increase Size"
+                      >
+                        <Plus size={11} />
+                      </button>
+
+                      <span className="h-4 w-[1.5px] bg-white/10 mx-1"></span>
+
                       <button
                         onClick={(e) => finalizeStampPlacement(e)}
-                        className="bg-emerald-500 hover:bg-emerald-600 text-white rounded p-0.5 hover:scale-105 transition-all"
-                        title="Place Stamp"
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg p-1 hover:scale-105 transition-all shadow-md"
+                        title="Place Design"
                       >
-                        <Check size={10} />
+                        <Check size={11} />
                       </button>
                       <button
                         onClick={(e) => {
@@ -3379,10 +3413,10 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                           e.preventDefault();
                           setActiveStamp(null);
                         }}
-                        className="bg-red-500 hover:bg-red-600 text-white rounded p-0.5 hover:scale-105 transition-all"
-                        title="Delete Stamp"
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-lg p-1 hover:scale-105 transition-all shadow-md"
+                        title="Remove Design"
                       >
-                        <X size={10} />
+                        <X size={11} />
                       </button>
                     </div>
                   </div>
