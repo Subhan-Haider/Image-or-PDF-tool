@@ -167,8 +167,29 @@ export default function PdfTools() {
         notify(`Failed to load "${file.name}": The file is empty (0 bytes)`, 'error');
         continue;
       }
+      
+      // Gracefully handle raw images dropped directly into PDF Editor Workspace
+      if (file.type.startsWith('image/')) {
+        try {
+          const thumbnail = URL.createObjectURL(file);
+          allNewPages.push({
+            id: `${file.name}_img_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+            file,
+            fileName: file.name,
+            pageIndex: 0,
+            pageNum: 1,
+            thumbnail,
+            rotation: 0
+          });
+          loadedCount++;
+        } catch (err: any) {
+          notify(`Failed to load image "${file.name}": ${err.message}`, 'error');
+        }
+        continue;
+      }
+
       if (file.type !== 'application/pdf') {
-        notify(`"${file.name}" is not a PDF file`, 'error');
+        notify(`"${file.name}" is not a PDF or image file`, 'error');
         continue;
       }
       try {
@@ -182,7 +203,7 @@ export default function PdfTools() {
 
     if (allNewPages.length > 0) {
       setPdfPages(prev => [...prev, ...allNewPages]);
-      notify(`Successfully loaded ${loadedCount} PDF file(s) with ${allNewPages.length} total pages`, 'success');
+      notify(`Successfully loaded ${loadedCount} document/image file(s) with ${allNewPages.length} pages`, 'success');
     }
     setIsProcessing(false);
   };
@@ -506,9 +527,60 @@ export default function PdfTools() {
 
       // Loop through pages and pull them from their source files
       for (const pageItem of pdfPages) {
-        const fileBytes = await pageItem.file.arrayBuffer();
-        const sourceDoc = await PDFLib.PDFDocument.load(fileBytes);
-        const [copiedPage] = await compiledPdf.copyPages(sourceDoc, [pageItem.pageIndex]);
+        let copiedPage;
+        const isImage = pageItem.file.type.startsWith('image/');
+
+        if (isImage) {
+          const isPng = pageItem.file.type === 'image/png';
+          const isJpg = pageItem.file.type === 'image/jpeg' || pageItem.file.type === 'image/jpg';
+          let imgBytes;
+          let embeddedImg;
+
+          if (isPng) {
+            imgBytes = await pageItem.file.arrayBuffer();
+            embeddedImg = await compiledPdf.embedPng(imgBytes);
+          } else if (isJpg) {
+            imgBytes = await pageItem.file.arrayBuffer();
+            embeddedImg = await compiledPdf.embedJpg(imgBytes);
+          } else {
+            // High fidelity image conversion block for webp, svg, gif, bmp
+            const imgUrl = URL.createObjectURL(pageItem.file);
+            const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+              const el = new Image();
+              el.onload = () => resolve(el);
+              el.onerror = reject;
+              el.src = imgUrl;
+            });
+            URL.revokeObjectURL(imgUrl);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Canvas conversion context failed');
+            ctx.drawImage(img, 0, 0);
+
+            const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.95));
+            if (!blob) throw new Error('Blob compression conversion failed');
+            imgBytes = await blob.arrayBuffer();
+            embeddedImg = await compiledPdf.embedJpg(imgBytes);
+          }
+
+          const imgW = embeddedImg.width;
+          const imgH = embeddedImg.height;
+          copiedPage = compiledPdf.addPage([imgW, imgH]);
+          copiedPage.drawImage(embeddedImg, {
+            x: 0,
+            y: 0,
+            width: imgW,
+            height: imgH
+          });
+        } else {
+          const fileBytes = await pageItem.file.arrayBuffer();
+          const sourceDoc = await PDFLib.PDFDocument.load(fileBytes);
+          const [copied] = await compiledPdf.copyPages(sourceDoc, [pageItem.pageIndex]);
+          copiedPage = copied;
+        }
 
         // Apply visual rotation from editor workspace
         if (pageItem.rotation !== 0) {
@@ -570,7 +642,9 @@ export default function PdfTools() {
           });
         }
 
-        compiledPdf.addPage(copiedPage);
+        if (!isImage) {
+          compiledPdf.addPage(copiedPage);
+        }
       }
 
       const pdfBytes = await compiledPdf.save();
@@ -820,16 +894,16 @@ export default function PdfTools() {
                     <div className="w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/10 flex items-center justify-center text-primary-400 mb-4">
                       <Layers size={32} />
                     </div>
-                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Drop your PDFs here</h3>
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Drop your PDFs or Images here</h3>
                     <p className="text-sm text-slate-600 dark:text-slate-400 max-w-sm mb-4">
-                      Select or paste (Ctrl+V) multiple PDF files to merge, split, rotate, or rearrange pages.
+                      Select or paste (Ctrl+V) multiple PDF or image files to merge, split, rotate, or rearrange pages.
                     </p>
                     <label className="btn-base bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-xl cursor-pointer">
                       Browse Files
                       <input 
                         type="file" 
                         multiple 
-                        accept="application/pdf" 
+                        accept="application/pdf,image/*" 
                         className="hidden" 
                         onChange={e => e.target.files && handlePdfUpload(Array.from(e.target.files))} 
                       />
@@ -962,11 +1036,11 @@ export default function PdfTools() {
                       {/* Add more file button card */}
                       <label className="border-2 border-dashed border-black/10 dark:border-white/20 rounded-xl flex flex-col items-center justify-center aspect-[3/4] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                         <Plus size={24} className="text-slate-400 mb-1" />
-                        <span className="text-xs text-slate-500">Add PDF</span>
+                        <span className="text-xs text-slate-500">Add PDF / Image</span>
                         <input 
                           type="file" 
                           multiple 
-                          accept="application/pdf" 
+                          accept="application/pdf,image/*" 
                           className="hidden" 
                           onChange={e => e.target.files && handlePdfUpload(Array.from(e.target.files))} 
                         />
