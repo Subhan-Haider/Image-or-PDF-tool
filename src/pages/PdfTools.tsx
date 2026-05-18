@@ -2141,6 +2141,17 @@ export default function PdfTools() {
             <span className="text-xs text-white font-semibold bg-black/60 px-4 py-1.5 rounded-full border border-white/10 tabular-nums">
               {zoomGallery.index + 1} / {zoomGallery.images.length}
             </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerDownload(zoomGallery.images[zoomGallery.index], `preview-page-${zoomGallery.index + 1}.png`);
+              }}
+              className="p-1.5 rounded-full bg-emerald-500/80 hover:bg-emerald-500 text-white transition-all shadow-lg border border-white/10 flex items-center gap-2 px-4"
+              title="Download this page as image"
+            >
+              <Download size={14} />
+              <span className="text-xs font-medium">Download Page</span>
+            </button>
           </div>
 
           <div className="absolute top-4 right-4 z-55 flex items-center gap-2">
