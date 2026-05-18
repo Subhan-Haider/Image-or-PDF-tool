@@ -3144,7 +3144,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
 
           {/* Side Toolbar Panel */}
-          <div className="md:w-64 border-r border-white/5 bg-slate-900/40 p-4 space-y-5 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible shrink-0 gap-4 md:gap-0">
+          <div className="md:w-64 border-r border-white/5 bg-slate-900/40 p-4 space-y-5 flex flex-row md:flex-col overflow-x-auto md:overflow-y-auto shrink-0 gap-4 md:gap-0 custom-sidebar-scrollbar">
 
             {/* Quick Tools */}
             <div className="space-y-2 w-full">
