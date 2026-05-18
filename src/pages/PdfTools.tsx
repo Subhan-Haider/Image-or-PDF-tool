@@ -1021,7 +1021,7 @@ export default function PdfTools() {
 
         {/* Tab Switcher */}
         <div className="flex justify-center mb-8 px-2">
-          <div className="flex flex-wrap sm:flex-nowrap justify-center p-2 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-2xl gap-1.5 w-full max-w-4xl shadow-inner overflow-hidden">
+          <div className="flex flex-nowrap justify-center p-2 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-2xl gap-1.5 w-full shadow-inner overflow-hidden">
             {(['editor', 'to-images', 'from-images', 'compress', 'office-to-pdf'] as const).map(tab => {
               const active = activeTab === tab;
               const labels = {
