@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from 'react';
-import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, HelpCircle, FileText, GripHorizontal } from 'lucide-react';
+import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { useToast } from '../hooks/useToast';
@@ -23,7 +23,7 @@ interface ImagePageItem {
   preview: string;
 }
 
-type ActiveTab = 'editor' | 'to-images' | 'from-images' | 'office-to-pdf';
+type ActiveTab = 'editor' | 'to-images' | 'from-images' | 'office-to-pdf' | 'compress';
 
 export default function PdfTools() {
   const { toasts, addToast, removeToast } = useToast();
@@ -65,6 +65,12 @@ export default function PdfTools() {
 
   // --- Grid View Zoom State ---
   const [pageSizeMode, setPageSizeMode] = useState<'small' | 'medium' | 'large' | 'extra-large'>('medium');
+
+  // --- PDF Compression State ---
+  const [compressFile, setCompressFile] = useState<File | null>(null);
+  const [compressMode, setCompressMode] = useState<'low' | 'medium' | 'high' | 'preserve'>('medium');
+  const [compressProgress, setCompressProgress] = useState<{ current: number; total: number } | null>(null);
+  const [compressResult, setCompressResult] = useState<{ originalSize: number; compressedSize: number; downloadUrl: string; filename: string } | null>(null);
 
   // --- Drag and Drop Reordering State ---
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -116,7 +122,120 @@ export default function PdfTools() {
     setOfficeFile(null);
     setOfficeHtml('');
     setOfficeFileType(null);
+    setCompressFile(null);
+    setCompressResult(null);
+    setCompressProgress(null);
     notify('Workspace cleared', 'info');
+  };
+
+  const formatSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleCompressFileUpload = (file: File) => {
+    if (file.size === 0) {
+      notify(`Failed to load "${file.name}": The file is empty (0 bytes)`, 'error');
+      return;
+    }
+    if (file.type !== 'application/pdf') {
+      notify('Unsupported format. Please upload a PDF document.', 'error');
+      return;
+    }
+    setCompressFile(file);
+    setCompressResult(null);
+    setCompressProgress(null);
+  };
+
+  const handleCompressPdf = async () => {
+    if (!compressFile) return;
+    setIsProcessing(true);
+    setCompressResult(null);
+    notify('Starting PDF compression…', 'info');
+
+    try {
+      const pdfjsLib = (window as any).pdfjsLib;
+      const PDFLib = (window as any).PDFLib;
+      if (!pdfjsLib || !PDFLib) {
+        throw new Error('PDF processing engines are loading. Please wait a moment.');
+      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+      const arrayBuffer = await compressFile.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const totalPages = pdf.numPages;
+
+      const compiledPdf = await PDFLib.PDFDocument.create();
+
+      // Configure compression ratios based on selected mode
+      let scale = 1.0;
+      let quality = 0.5;
+      if (compressMode === 'high') {
+        scale = 0.8;
+        quality = 0.3;
+      } else if (compressMode === 'low') {
+        scale = 1.4;
+        quality = 0.75;
+      } else if (compressMode === 'preserve') {
+        scale = 1.8;
+        quality = 0.9;
+      }
+
+      for (let i = 1; i <= totalPages; i++) {
+        setCompressProgress({ current: i, total: totalPages });
+        
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas render context failure');
+
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        // Export page canvas as compressed JPEG blob
+        const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', quality));
+        if (!blob) throw new Error('Failed to capture page canvas');
+
+        const pageBytes = await blob.arrayBuffer();
+        const embeddedImg = await compiledPdf.embedJpg(pageBytes);
+
+        const imgW = embeddedImg.width;
+        const imgH = embeddedImg.height;
+
+        const newPage = compiledPdf.addPage([imgW, imgH]);
+        newPage.drawImage(embeddedImg, {
+          x: 0,
+          y: 0,
+          width: imgW,
+          height: imgH
+        });
+      }
+
+      const pdfBytes = await compiledPdf.save();
+      const compressedBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const downloadUrl = URL.createObjectURL(compressedBlob);
+      const filename = `${compressFile.name.replace(/\.pdf$/, '')}_compressed.pdf`;
+
+      setCompressResult({
+        originalSize: compressFile.size,
+        compressedSize: compressedBlob.size,
+        downloadUrl,
+        filename
+      });
+
+      notify('PDF successfully compressed ✓', 'success');
+    } catch (err: any) {
+      notify(`Compression failed: ${err.message}`, 'error');
+    } finally {
+      setIsProcessing(false);
+      setCompressProgress(null);
+    }
   };
 
   // --- PDF Thumbnail & Info Extractor ---
@@ -305,6 +424,8 @@ export default function PdfTools() {
           handleImageUpload(files);
         } else if (activeTab === 'office-to-pdf') {
           handleOfficeUpload(files[0]);
+        } else if (activeTab === 'compress') {
+          handleCompressFileUpload(files[0]);
         }
       }
     };
@@ -797,13 +918,14 @@ export default function PdfTools() {
 
         {/* Tab Switcher */}
         <div className="flex justify-center mb-8 px-2">
-          <div className="flex flex-wrap sm:flex-nowrap justify-center p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl backdrop-blur-xl gap-1 sm:gap-0 w-full max-w-2xl">
-            {(['editor', 'to-images', 'from-images', 'office-to-pdf'] as const).map(tab => {
+          <div className="flex flex-wrap sm:flex-nowrap justify-center p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl backdrop-blur-xl gap-1 sm:gap-0 w-full max-w-3xl">
+            {(['editor', 'to-images', 'from-images', 'compress', 'office-to-pdf'] as const).map(tab => {
               const active = activeTab === tab;
               const labels = {
                 'editor': { text: 'PDF Organizer', mobileText: 'Organizer', icon: Layers },
                 'to-images': { text: 'PDF to Images', mobileText: 'PDF to Img', icon: FileImage },
                 'from-images': { text: 'Images to PDF', mobileText: 'Img to PDF', icon: ImageIcon },
+                'compress': { text: 'Compress PDF', mobileText: 'Compress', icon: FileDown },
                 'office-to-pdf': { text: 'Office to PDF', mobileText: 'Office converter', icon: FileText }
               };
               const Icon = labels[tab].icon;
@@ -1263,6 +1385,136 @@ export default function PdfTools() {
               </>
             )}
 
+            {/* Split Page 5: Compress PDF */}
+            {activeTab === 'compress' && (
+              <>
+                {!compressFile ? (
+                  <Card className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-black/10 dark:border-white/20">
+                    <div className="w-16 h-16 rounded-2xl bg-black/5 dark:bg-white/10 flex items-center justify-center text-primary-400 mb-4">
+                      <FileDown size={32} />
+                    </div>
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Drop your PDF here to compress</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 max-w-sm mb-4">
+                      Upload or paste (Ctrl+V) a PDF document to compress its embedded image quality and file size locally in your browser.
+                    </p>
+                    <label className="btn-base bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-xl cursor-pointer">
+                      Browse File
+                      <input 
+                        type="file" 
+                        accept="application/pdf" 
+                        className="hidden" 
+                        onChange={e => e.target.files?.[0] && handleCompressFileUpload(e.target.files[0])} 
+                      />
+                    </label>
+                  </Card>
+                ) : (
+                  <Card className="p-6">
+                    <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-4 mb-6">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-slate-900 dark:text-white truncate">
+                          File: {compressFile.name}
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Original Size: {formatSize(compressFile.size)}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => { setCompressFile(null); setCompressResult(null); setCompressProgress(null); }} 
+                        className="text-xs text-red-400 hover:text-red-300"
+                        disabled={isProcessing}
+                      >
+                        Change File
+                      </button>
+                    </div>
+
+                    {/* Progress indicator */}
+                    {compressProgress && (
+                      <div className="py-6 space-y-3">
+                        <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
+                          <span>Compressing document pages...</span>
+                          <span>{Math.round((compressProgress.current / compressProgress.total) * 100)}%</span>
+                        </div>
+                        <div className="w-full bg-black/10 dark:bg-white/10 h-2 rounded-full overflow-hidden">
+                          <div 
+                            className="bg-primary-500 h-full rounded-full transition-all duration-300"
+                            style={{ width: `${(compressProgress.current / compressProgress.total) * 100}%` }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-500 italic text-center">
+                          Processing Page {compressProgress.current} of {compressProgress.total}...
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Success results block */}
+                    {compressResult && (
+                      <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center space-y-4">
+                        <div className="inline-flex p-3 rounded-full bg-emerald-500/10 text-emerald-500 mb-2 animate-bounce">
+                          <CheckCircle2 size={32} />
+                        </div>
+                        <h4 className="text-lg font-semibold text-emerald-600 dark:text-emerald-450">
+                          Compression Complete!
+                        </h4>
+                        
+                        {/* Compression stats container */}
+                        <div className="grid grid-cols-3 gap-4 max-w-md mx-auto py-2 bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 text-center mt-2">
+                          <div>
+                            <span className="text-[10px] text-slate-400 block uppercase">Original</span>
+                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                              {formatSize(compressResult.originalSize)}
+                            </span>
+                          </div>
+                          <div className="border-x border-black/5 dark:border-white/5">
+                            <span className="text-[10px] text-slate-400 block uppercase">Compressed</span>
+                            <span className="text-sm font-bold text-primary-500">
+                              {formatSize(compressResult.compressedSize)}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 block uppercase">Reduced</span>
+                            <span className="text-sm font-bold text-emerald-500">
+                              {Math.max(0, Math.round(((compressResult.originalSize - compressResult.compressedSize) / compressResult.originalSize) * 100))}%
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
+                          <a 
+                            href={compressResult.downloadUrl}
+                            download={compressResult.filename}
+                            className="btn-base bg-primary-500 hover:bg-primary-600 text-white px-6 py-2.5 rounded-xl font-medium inline-flex items-center gap-2 shadow-lg hover:shadow-primary-500/25 transition-all"
+                          >
+                            <Download size={16} /> Download PDF
+                          </a>
+                          <button 
+                            onClick={() => { setCompressFile(null); setCompressResult(null); setCompressProgress(null); }}
+                            className="btn-base bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 px-6 py-2.5 rounded-xl font-medium"
+                          >
+                            Compress Another
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Initial state explaining options */}
+                    {!compressProgress && !compressResult && (
+                      <div className="text-center py-8 space-y-2">
+                        <div className="inline-flex p-3 rounded-full bg-primary-500/10 text-primary-500 mb-2">
+                          <Minimize2 size={24} />
+                        </div>
+                        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                          Ready for Local Compression
+                        </h4>
+                        <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                          Your PDF file is loaded. Configure the compression parameters in the sidebar settings on the right, and then click "Compress PDF" to start!
+                        </p>
+                      </div>
+                    )}
+                  </Card>
+                )}
+              </>
+            )}
+
             {/* Privacy Promise Banner */}
             <Card className="bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border border-emerald-500/10">
               <div className="flex gap-4 items-start">
@@ -1599,10 +1851,82 @@ export default function PdfTools() {
               </Card>
             )}
 
+            {/* Sidebar 5: PDF Compression Settings */}
+            {activeTab === 'compress' && (
+              <Card>
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm uppercase tracking-wide">
+                  Compression Settings
+                </h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs text-slate-600 dark:text-slate-400 mb-2 block">
+                      Compression Level
+                    </label>
+                    <div className="space-y-2.5">
+                      {[
+                        { 
+                          id: 'high', 
+                          title: 'High Compression', 
+                          desc: 'Smallest file size, standard image quality' 
+                        },
+                        { 
+                          id: 'medium', 
+                          title: 'Medium Compression', 
+                          desc: 'Recommended balance of size & quality' 
+                        },
+                        { 
+                          id: 'low', 
+                          title: 'Low Compression', 
+                          desc: 'High image quality, minor size reduction' 
+                        },
+                        { 
+                          id: 'preserve', 
+                          title: 'Preserve Quality', 
+                          desc: 'Maximum image fidelity & font resolution' 
+                        }
+                      ].map(mode => (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onClick={() => setCompressMode(mode.id as any)}
+                          className={`w-full text-left p-3 rounded-xl border transition-all ${
+                            compressMode === mode.id
+                              ? 'border-primary-500 bg-primary-500/5 dark:bg-primary-500/10 text-slate-900 dark:text-white'
+                              : 'border-black/10 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          <div className="text-xs font-semibold">{mode.title}</div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-550 mt-0.5">
+                            {mode.desc}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 border-t border-black/5 dark:border-white/5 pt-4">
+                  <Button 
+                    onClick={handleCompressPdf}
+                    disabled={compressFile === null || isProcessing}
+                    className="w-full py-3 flex items-center justify-center gap-2"
+                  >
+                    {isProcessing ? (
+                      <><RefreshCw size={16} className="animate-spin" /> Processing…</>
+                    ) : (
+                      <><FileDown size={16} /> Compress PDF</>
+                    )}
+                  </Button>
+                </div>
+              </Card>
+            )}
+
             {/* Secondary Action: Reset Workspace */}
             {((activeTab === 'editor' && pdfPages.length > 0) || 
               (activeTab === 'to-images' && pdfToImgFile) || 
               (activeTab === 'from-images' && imagePages.length > 0) ||
+              (activeTab === 'compress' && compressFile) ||
               (activeTab === 'office-to-pdf' && officeFile)) && (
               <button 
                 onClick={clearWorkspace}
