@@ -173,6 +173,18 @@ export default function PdfTools() {
     }
   };
 
+  const triggerDownload = (url: string, filename: string) => {
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+    }, 150);
+  };
+
   const handleCompressFileUpload = (file: File) => {
     if (file.size === 0) {
       notify(`Failed to load "${file.name}": The file is empty (0 bytes)`, 'error');
@@ -1762,13 +1774,12 @@ export default function PdfTools() {
                   {/* Download & Share buttons after compile */}
                   {compiledPdfResult && (
                     <div className="flex gap-2 animate-fade-in">
-                      <a
-                        href={compiledPdfResult.url}
-                        download={compiledPdfResult.filename}
+                      <button
+                        onClick={() => triggerDownload(compiledPdfResult.url, compiledPdfResult.filename)}
                         className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-all shadow-md"
                       >
                         <Download size={15} /> Download
-                      </a>
+                      </button>
                       <button
                         onClick={() => handleShareFile(compiledPdfResult.url, compiledPdfResult.filename, 'application/pdf')}
                         className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-all shadow-md"
@@ -1925,13 +1936,12 @@ export default function PdfTools() {
 
                   {compiledImagesPdfResult && (
                     <div className="flex gap-2 animate-fade-in">
-                      <a
-                        href={compiledImagesPdfResult.url}
-                        download={compiledImagesPdfResult.filename}
+                      <button
+                        onClick={() => triggerDownload(compiledImagesPdfResult.url, compiledImagesPdfResult.filename)}
                         className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-all shadow-md"
                       >
                         <Download size={15} /> Download
-                      </a>
+                      </button>
                       <button
                         onClick={() => handleShareFile(compiledImagesPdfResult.url, compiledImagesPdfResult.filename, 'application/pdf')}
                         className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-all shadow-md"
