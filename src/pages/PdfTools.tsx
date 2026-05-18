@@ -37,6 +37,7 @@ export default function PdfTools() {
   const [editorMargin, setEditorMargin] = useState<'none' | 'small' | 'standard'>('none');
   const [editorFilename, setEditorFilename] = useState('compiled_document');
   const [editorWatermark, setEditorWatermark] = useState('');
+  const [editorPageNumbers, setEditorPageNumbers] = useState(false);
 
   // --- PDF to Images State ---
   const [pdfToImgFile, setPdfToImgFile] = useState<File | null>(null);
@@ -719,7 +720,8 @@ export default function PdfTools() {
       const compiledPdf = await PDFLib.PDFDocument.create();
 
       // Loop through pages and pull them from their source files
-      for (const pageItem of pdfPages) {
+      for (let i = 0; i < pdfPages.length; i++) {
+        const pageItem = pdfPages[i];
         let copiedPage;
         const isImage = pageItem.file.type.startsWith('image/');
 
@@ -833,6 +835,19 @@ export default function PdfTools() {
             font,
             color: PDFLib.rgb(0.7, 0.7, 0.7),
             opacity: 0.6
+          });
+        }
+
+        // Apply Page Numbers
+        if (editorPageNumbers) {
+          const font = await compiledPdf.embedFont(PDFLib.StandardFonts.Helvetica);
+          const pageNumText = `${i + 1} / ${pdfPages.length}`;
+          copiedPage.drawText(pageNumText, {
+            x: copiedPage.getWidth() - font.widthOfTextAtSize(pageNumText, 10) - 20,
+            y: 20,
+            size: 10,
+            font,
+            color: PDFLib.rgb(0.5, 0.5, 0.5)
           });
         }
 
@@ -1109,7 +1124,7 @@ export default function PdfTools() {
                           Page Management ({pdfPages.length} pages loaded)
                         </h3>
                         <p className="text-[10px] sm:text-xs text-slate-500 mt-1 font-medium hidden sm:block">
-                          Merge PDFs • Split PDF • Delete pages • Rotate pages • Reorder pages • Extract pages
+                          Merge PDFs • Split PDF • Delete pages • Rotate pages • Reorder pages • Extract pages • Add Watermarks • Page Numbers • Resize Pages
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
@@ -1750,16 +1765,37 @@ export default function PdfTools() {
                     </select>
                   </div>
 
-                  {/* Watermark */}
-                  <div>
-                    <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">Text Watermark Overlay (Bottom Center)</label>
-                    <input 
-                      type="text" 
-                      value={editorWatermark}
-                      onChange={e => setEditorWatermark(e.target.value)}
-                      placeholder="e.g. Confidential"
-                      className="w-full bg-black/5 dark:bg-surface-800 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500" 
-                    />
+                  {/* Watermark & Page Numbers */}
+                  <div className="space-y-4 border-t border-black/5 dark:border-white/5 pt-3">
+                    <div>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">Text Watermark Overlay (Bottom Center)</label>
+                      <input 
+                        type="text" 
+                        value={editorWatermark}
+                        onChange={e => setEditorWatermark(e.target.value)}
+                        placeholder="e.g. Confidential"
+                        className="w-full bg-black/5 dark:bg-surface-800 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500" 
+                      />
+                    </div>
+                    
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        checked={editorPageNumbers} 
+                        onChange={e => setEditorPageNumbers(e.target.checked)} 
+                        className="hidden" 
+                      />
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                        editorPageNumbers 
+                          ? 'bg-primary-500 border-primary-500 text-white' 
+                          : 'border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 group-hover:border-primary-500/50'
+                      }`}>
+                        {editorPageNumbers && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                      </div>
+                      <span className="text-sm text-slate-700 dark:text-slate-300 select-none group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                        Automatically add page numbers
+                      </span>
+                    </label>
                   </div>
                 </div>
 
