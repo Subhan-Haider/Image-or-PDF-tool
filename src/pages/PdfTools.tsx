@@ -2311,7 +2311,6 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   // Stamp placement dragging states
   const [activeStamp, setActiveStamp] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [isDraggingStamp, setIsDraggingStamp] = useState(false);
-  const [dragStartOffset, setDragStartOffset] = useState({ x: 0, y: 0 });
 
   // Move/Pan tool state
   const panContainerRef = useRef<HTMLDivElement>(null);
@@ -2520,16 +2519,24 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
 
     if (currentTool === 'image') {
       if (stampedImage) {
-        const img = new Image();
-        img.src = stampedImage;
-        img.onload = () => {
+        if (activeStamp) {
           setActiveStamp({
+            ...activeStamp,
             x,
-            y,
-            width: img.naturalWidth || 200,
-            height: img.naturalHeight || 80
+            y
           });
-        };
+        } else {
+          const img = new Image();
+          img.src = stampedImage;
+          img.onload = () => {
+            setActiveStamp({
+              x,
+              y,
+              width: img.naturalWidth || 200,
+              height: img.naturalHeight || 80
+            });
+          };
+        }
       }
       return;
     }
@@ -2589,14 +2596,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
       return;
     }
 
-    if (isDraggingStamp && activeStamp) {
-      setActiveStamp({
-        ...activeStamp,
-        x: x - dragStartOffset.x,
-        y: y - dragStartOffset.y
-      });
-      return;
-    }
+    
 
     if (!isDrawing) return;
 
@@ -2695,11 +2695,48 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     const canvas = canvasRef.current;
     if (!canvas || !activeStamp) return;
 
-    const { x, y } = getCoordinates(e as any);
-    setDragStartOffset({
-      x: x - activeStamp.x,
-      y: y - activeStamp.y
-    });
+    // Get starting coordinates in canvas space
+    const startCoords = getCoordinates(e as any);
+    const startX = startCoords.x;
+    const startY = startCoords.y;
+
+    const initialStampX = activeStamp.x;
+    const initialStampY = activeStamp.y;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      moveEvent.stopPropagation();
+      moveEvent.preventDefault();
+      
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const curX = (moveEvent.clientX - rect.left) * scaleX;
+      const curY = (moveEvent.clientY - rect.top) * scaleY;
+      
+      const deltaX = curX - startX;
+      const deltaY = curY - startY;
+
+      setActiveStamp(prev => prev ? {
+        ...prev,
+        x: initialStampX + deltaX,
+        y: initialStampY + deltaY
+      } : null);
+    };
+
+    const handlePointerUp = (upEvent: PointerEvent) => {
+      upEvent.stopPropagation();
+      upEvent.preventDefault();
+      setIsDraggingStamp(false);
+      
+      window.removeEventListener('pointermove', handlePointerMove, { capture: true });
+      window.removeEventListener('pointerup', handlePointerUp, { capture: true });
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { capture: true, passive: false });
+    window.addEventListener('pointerup', handlePointerUp, { capture: true, passive: false });
   };
 
   const finalizeStampPlacement = (e?: React.MouseEvent | React.TouchEvent) => {
