@@ -72,8 +72,12 @@ export default function PdfTools() {
   const [compressProgress, setCompressProgress] = useState<{ current: number; total: number; currentSize: number } | null>(null);
   const [compressResult, setCompressResult] = useState<{ originalSize: number; compressedSize: number; downloadUrl: string; filename: string } | null>(null);
   
-  // --- Zoom Modal State ---
-  const [zoomImage, setZoomImage] = useState<string | null>(null);
+  // --- Zoom Modal / Gallery State ---
+  const [zoomGallery, setZoomGallery] = useState<{ images: string[]; index: number } | null>(null);
+  const openZoom = (images: string[], index: number) => setZoomGallery({ images, index });
+  const closeZoom = () => setZoomGallery(null);
+  const zoomNext = () => setZoomGallery(prev => prev && prev.index < prev.images.length - 1 ? { ...prev, index: prev.index + 1 } : prev);
+  const zoomPrev = () => setZoomGallery(prev => prev && prev.index > 0 ? { ...prev, index: prev.index - 1 } : prev);
 
   // --- Drag and Drop Reordering State ---
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -466,16 +470,17 @@ export default function PdfTools() {
     return () => window.removeEventListener('paste', handleGlobalPaste);
   }, [activeTab]);
 
-  // Esc key listener for zoom modal
+  // Esc + arrow key listener for zoom gallery modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setZoomImage(null);
-      }
+      if (!zoomGallery) return;
+      if (e.key === 'Escape') closeZoom();
+      if (e.key === 'ArrowRight') zoomNext();
+      if (e.key === 'ArrowLeft') zoomPrev();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [zoomGallery]);
 
   // --- Office to PDF Local Processing Core ---
   const handleOfficeUpload = async (file: File) => {
@@ -1152,7 +1157,7 @@ export default function PdfTools() {
                             <div className="absolute top-2 right-2 z-25 flex items-center gap-1.5 bg-black/50 backdrop-blur-md p-1 rounded-lg shadow-lg border border-white/10">
                               <button 
                                 type="button"
-                                onClick={() => setZoomImage(page.thumbnail)}
+                                onClick={() => openZoom(pdfPages.map(p => p.thumbnail), i)}
                                 className="p-1.5 rounded-md bg-white/10 text-white hover:bg-primary-500 hover:text-white transition-all animate-pulse"
                                 title="Zoom Page"
                               >
@@ -1392,7 +1397,7 @@ export default function PdfTools() {
                             <div className="absolute top-2 right-2 z-25 flex items-center gap-1.5 bg-black/50 backdrop-blur-md p-1 rounded-lg shadow-lg border border-white/10">
                               <button 
                                 type="button"
-                                onClick={() => setZoomImage(item.preview)}
+                                onClick={() => openZoom(imagePages.map(p => p.preview), i)}
                                 className="p-1.5 rounded-md bg-white/10 text-white hover:bg-primary-500 hover:text-white transition-all animate-pulse"
                                 title="Zoom Image"
                               >
@@ -2028,37 +2033,83 @@ export default function PdfTools() {
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-      {/* Dynamic Ultra-High-Fidelity Large Zoom Modal Preview */}
-      {zoomImage && (
+      {zoomGallery && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-955/90 backdrop-blur-lg transition-all duration-300 animate-fade-in"
-          onClick={() => setZoomImage(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl"
+          onClick={closeZoom}
         >
+          {/* Top controls */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-55 flex items-center gap-3">
+            <span className="text-xs text-white font-semibold bg-black/60 px-4 py-1.5 rounded-full border border-white/10 tabular-nums">
+              {zoomGallery.index + 1} / {zoomGallery.images.length}
+            </span>
+          </div>
+
           <div className="absolute top-4 right-4 z-55 flex items-center gap-2">
-            <span className="text-[10px] text-slate-400 font-semibold bg-black/50 px-3 py-1.5 rounded-lg border border-white/10 tracking-wide uppercase">
-              ESC or Click Outside to close
+            <span className="text-[10px] text-slate-400 font-semibold bg-black/50 px-3 py-1.5 rounded-lg border border-white/10 tracking-wide uppercase hidden sm:flex">
+              ← → Arrow Keys to navigate · ESC to close
             </span>
             <button 
-              onClick={() => setZoomImage(null)}
-              className="p-2 rounded-xl bg-white/10 hover:bg-red-500 text-white hover:text-white transition-all shadow-lg border border-white/10"
+              onClick={closeZoom}
+              className="p-2 rounded-xl bg-white/10 hover:bg-red-500 text-white transition-all shadow-lg border border-white/10"
               title="Close Preview"
             >
               <Minimize2 size={16} />
             </button>
           </div>
-          
+
+          {/* Prev Button */}
+          <button
+            onClick={e => { e.stopPropagation(); zoomPrev(); }}
+            disabled={zoomGallery.index === 0}
+            className="absolute left-3 sm:left-6 z-55 p-3 rounded-full bg-white/10 hover:bg-primary-500 text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all shadow-xl border border-white/10"
+            title="Previous Page"
+          >
+            <ArrowLeft size={22} />
+          </button>
+
+          {/* Next Button */}
+          <button
+            onClick={e => { e.stopPropagation(); zoomNext(); }}
+            disabled={zoomGallery.index === zoomGallery.images.length - 1}
+            className="absolute right-3 sm:right-6 z-55 p-3 rounded-full bg-white/10 hover:bg-primary-500 text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all shadow-xl border border-white/10"
+            title="Next Page"
+          >
+            <ArrowRight size={22} />
+          </button>
+
+          {/* Image container */}
           <div 
-            className="relative max-w-4xl max-h-[85vh] w-full h-full flex items-center justify-center p-2 sm:p-6"
+            className="relative max-w-4xl max-h-[85vh] w-full h-full flex items-center justify-center px-16 sm:px-20"
             onClick={e => e.stopPropagation()}
           >
-            <div className="bg-white/5 dark:bg-white/10 p-2 sm:p-3 rounded-2xl border border-white/10 shadow-2xl overflow-hidden max-w-full max-h-full flex items-center justify-center">
+            <div className="bg-white/5 p-2 sm:p-3 rounded-2xl border border-white/10 shadow-2xl overflow-hidden max-w-full max-h-full flex items-center justify-center">
               <img 
-                src={zoomImage} 
-                alt="Zoomed Preview" 
-                className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                key={zoomGallery.index}
+                src={zoomGallery.images[zoomGallery.index]} 
+                alt={`Preview ${zoomGallery.index + 1}`} 
+                className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-xl transition-opacity duration-200"
               />
             </div>
           </div>
+
+          {/* Bottom dot navigation */}
+          {zoomGallery.images.length > 1 && (
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5 z-55">
+              {zoomGallery.images.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={e => { e.stopPropagation(); setZoomGallery(prev => prev ? { ...prev, index: idx } : null); }}
+                  className={`rounded-full transition-all duration-200 ${
+                    idx === zoomGallery.index
+                      ? 'w-5 h-2 bg-primary-500'
+                      : 'w-2 h-2 bg-white/30 hover:bg-white/60'
+                  }`}
+                  title={`Go to page ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
