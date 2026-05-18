@@ -122,6 +122,10 @@ export default function PdfTools() {
     const allNewPages: PdfPageItem[] = [];
 
     for (const file of files) {
+      if (file.size === 0) {
+        notify(`Failed to load "${file.name}": The file is empty (0 bytes)`, 'error');
+        continue;
+      }
       if (file.type !== 'application/pdf') {
         notify(`"${file.name}" is not a PDF file`, 'error');
         continue;
@@ -143,6 +147,10 @@ export default function PdfTools() {
   };
 
   const handlePdfToImgUpload = async (file: File) => {
+    if (file.size === 0) {
+      notify(`Failed to load "${file.name}": The file is empty (0 bytes)`, 'error');
+      return;
+    }
     if (file.type !== 'application/pdf') {
       notify('Please upload a valid PDF document', 'error');
       return;
@@ -188,6 +196,10 @@ export default function PdfTools() {
   const handleImageUpload = (files: File[]) => {
     const loaded: ImagePageItem[] = [];
     files.forEach(file => {
+      if (file.size === 0) {
+        notify(`Failed to load "${file.name}": The file is empty (0 bytes)`, 'error');
+        return;
+      }
       if (!file.type.startsWith('image/')) {
         notify(`"${file.name}" is not an image`, 'error');
         return;
@@ -241,6 +253,10 @@ export default function PdfTools() {
 
   // --- Office to PDF Local Processing Core ---
   const handleOfficeUpload = async (file: File) => {
+    if (file.size === 0) {
+      notify(`Failed to convert "${file.name}": The file is empty (0 bytes)`, 'error');
+      return;
+    }
     const ext = file.name.split('.').pop()?.toLowerCase();
     if (!['docx', 'xlsx', 'xls', 'csv', 'txt'].includes(ext || '')) {
       notify('Unsupported format. Please upload .docx, .xlsx, .xls, .csv, or .txt', 'error');
