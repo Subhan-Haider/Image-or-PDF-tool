@@ -1,19 +1,18 @@
-import { Layers, ShieldCheck, Cpu, Image, FileImage, Download, Sliders, Droplets, Type, RotateCcw } from 'lucide-react';
+import { Layers, ShieldCheck, FileImage, Download, Type, Edit3, Sparkles, Award, Move } from 'lucide-react';
 import { Card } from '../components/Card';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 
 const FEATURES = [
-  { icon: Layers,      color: 'primary', title: '10+ Export Formats',    desc: 'PNG, JPG, WEBP, AVIF, PDF, SVG, ICO, BMP, TIFF — all conversion paths covered.' },
-  { icon: ShieldCheck, color: 'emerald', title: 'Zero-Upload Privacy',    desc: 'Every conversion runs locally in WebAssembly and Canvas API. Nothing touches a server.' },
-  { icon: Cpu,         color: 'violet',  title: 'Batch Processing',       desc: 'Convert dozens of images simultaneously with live per-file progress tracking.' },
-  { icon: FileImage,   color: 'amber',   title: 'PDF Import & Export',    desc: 'Render PDF pages as high-res images (2× scale) or export images directly to PDF.' },
-  { icon: Image,       color: 'sky',     title: 'Resize & Crop',          desc: 'Fit, fill, stretch, circular crop — with pixel or percentage dimensions.' },
-  { icon: Sliders,     color: 'primary', title: 'Live Image Filters',     desc: 'Brightness, contrast, saturation, warmth and sharpening with real-time previews.' },
-  { icon: Droplets,    color: 'pink',    title: 'Grayscale & Sepia',      desc: 'One-click film-style effects applied directly to any image before export.' },
-  { icon: Type,        color: 'orange',  title: 'Watermarking',           desc: 'Custom text watermarks with position, opacity and color controls.' },
-  { icon: RotateCcw,   color: 'teal',    title: 'Image Compression',      desc: 'Binary-search quality optimization to hit any target file size.' },
-  { icon: Download,    color: 'indigo',  title: 'ZIP Package Download',   desc: 'Batch export everything in a single compressed ZIP archive.' },
+  { icon: Edit3,       color: 'primary', title: 'Interactive PDF Editor', desc: 'Draw, highlight, erase, and annotate directly on PDF pages in a beautiful dark-mode canvas.' },
+  { icon: ShieldCheck, color: 'emerald', title: 'Zero-Upload Privacy',    desc: 'Every conversion and edit runs locally in your browser. Your documents never touch a server.' },
+  { icon: Sparkles,    color: 'violet',  title: 'Scan Enhancements',      desc: 'Fix skewed scans, auto-rotate pages, and apply high-contrast B&W filters to clean up documents.' },
+  { icon: Award,       color: 'amber',   title: 'Smart Badges & Stamps',  desc: 'Stamp documents with APPROVED, VOID, DRAFT, or upload and place your own custom signatures.' },
+  { icon: Type,        color: 'sky',     title: 'Dynamic Text Overlay',   desc: 'Type anywhere on the document with dynamic scaling that preserves sharpness on high-res PDFs.' },
+  { icon: Layers,      color: 'pink',    title: 'Batch Annotations',      desc: 'Apply your watermark, signature, or edits to every single page in the PDF instantly.' },
+  { icon: FileImage,   color: 'orange',  title: 'Format Conversion',      desc: 'Convert PDFs to high-res images, or compile dozens of images into a single polished PDF file.' },
+  { icon: Move,        color: 'teal',    title: 'Advanced Viewport',      desc: 'Pan, zoom, and navigate large documents effortlessly using intuitive hotkeys and trackpad gestures.' },
+  { icon: Download,    color: 'indigo',  title: 'Instant Exports',        desc: 'Download individual edited pages or export the entire compiled document as a ZIP or PDF.' },
 ];
 
 const colorMap: Record<string, string> = {
@@ -34,11 +33,11 @@ export default function Features() {
       {/* Header */}
       <div className="text-center mb-16">
         <h1 className="font-display font-bold text-4xl sm:text-5xl mb-4">
-          Every Tool You <span className="gradient-text">Need</span>
+          Every PDF Tool You <span className="gradient-text">Need</span>
         </h1>
         <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
-          Image Converter Pro is packed with professional-grade features — all running
-          privately in your browser without any installation.
+          From interactive document annotation to intelligent scan enhancements — all running
+          privately in your browser without any installation or server uploads.
         </p>
       </div>
 
@@ -56,11 +55,13 @@ export default function Features() {
       </div>
 
       {/* CTA */}
-      <div className="text-center">
-        <p className="text-slate-600 dark:text-slate-400 mb-6 text-lg">Ready to try it yourself?</p>
-        <Link to="/converter">
-          <Button size="lg">Open Converter →</Button>
-        </Link>
+      <div className="text-center flex flex-col sm:flex-row items-center justify-center gap-4">
+        <p className="text-slate-600 dark:text-slate-400 text-lg w-full sm:w-auto">Ready to try it yourself?</p>
+        <div className="flex gap-4">
+          <Link to="/pdf-tools">
+            <Button size="lg">Open PDF Editor →</Button>
+          </Link>
+        </div>
       </div>
     </div>
   );
