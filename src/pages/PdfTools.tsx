@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, Minus, Upload, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2, Maximize2, Share2, Edit3, Type, PenTool, Highlighter, MousePointer2, Eraser, Undo, Redo, Save, X, EyeOff, Award, Check } from 'lucide-react';
+import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, Minus, Upload, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2, Maximize2, Share2, Edit3, Type, PenTool, Highlighter, MousePointer2, Eraser, Undo, Redo, Save, X, EyeOff, Award, Check, Move } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { useToast } from '../hooks/useToast';
@@ -2266,7 +2266,7 @@ interface CanvasEditorModalProps {
   onSaveAll: (updatedPages: PdfPageItem[]) => void;
 }
 
-type EditTool = 'draw' | 'highlight' | 'text' | 'shape' | 'signature' | 'image' | 'erase' | 'pixelate' | 'badge';
+type EditTool = 'draw' | 'highlight' | 'text' | 'shape' | 'signature' | 'image' | 'erase' | 'pixelate' | 'badge' | 'move';
 
 const generateBadgeSVG = (text: string, colorHex: string): string => {
   const width = 160;
@@ -2312,6 +2312,11 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   const [activeStamp, setActiveStamp] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [isDraggingStamp, setIsDraggingStamp] = useState(false);
   const [dragStartOffset, setDragStartOffset] = useState({ x: 0, y: 0 });
+
+  // Move/Pan tool state
+  const panContainerRef = useRef<HTMLDivElement>(null);
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ mouseX: 0, mouseY: 0, scrollLeft: 0, scrollTop: 0 });
 
   // Stamped item state
   const [stampedImage, setStampedImage] = useState<string | null>(null);
@@ -2496,6 +2501,18 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
       return;
     }
 
+    if (currentTool === 'move') {
+      // Start panning the canvas scroll container
+      const container = panContainerRef.current;
+      if (container) {
+        const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+        setIsPanning(true);
+        setPanStart({ mouseX: clientX, mouseY: clientY, scrollLeft: container.scrollLeft, scrollTop: container.scrollTop });
+      }
+      return;
+    }
+
     if (currentTool === 'image') {
       if (stampedImage) {
         const img = new Image();
@@ -2554,6 +2571,19 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     setLastX(x);
     setLastY(y);
 
+    if (currentTool === 'move' && isPanning) {
+      const container = panContainerRef.current;
+      if (container) {
+        const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+        const dx = clientX - panStart.mouseX;
+        const dy = clientY - panStart.mouseY;
+        container.scrollLeft = panStart.scrollLeft - dx;
+        container.scrollTop = panStart.scrollTop - dy;
+      }
+      return;
+    }
+
     if (isDraggingStamp && activeStamp) {
       setActiveStamp({
         ...activeStamp,
@@ -2586,6 +2616,11 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   };
 
   const handleEndDraw = () => {
+    if (isPanning) {
+      setIsPanning(false);
+      return;
+    }
+
     if (isDraggingStamp) {
       setIsDraggingStamp(false);
       return;
@@ -3073,9 +3108,10 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
             <div className="space-y-2 w-full">
               <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold hidden md:block">Interactive Tools</span>
               <div className="grid grid-cols-4 md:grid-cols-2 gap-1.5 w-full">
-                {(['draw', 'highlight', 'text', 'shape', 'signature', 'image', 'erase', 'pixelate', 'badge'] as const).map(tool => {
+                {(['move', 'draw', 'highlight', 'text', 'shape', 'signature', 'image', 'erase', 'pixelate', 'badge'] as const).map(tool => {
                   const active = currentTool === tool;
                   const icons = {
+                    move: Move,
                     draw: PenTool,
                     highlight: Highlighter,
                     text: Type,
@@ -3087,6 +3123,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                     badge: Award
                   };
                   const labels = {
+                    move: 'Move/Pan',
                     draw: 'Draw',
                     highlight: 'Highlight',
                     text: 'Add Text',
@@ -3255,7 +3292,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
           </div>
 
           {/* Interactive Draw Environment */}
-          <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 relative overflow-auto select-none">
+          <div ref={panContainerRef} className="flex-1 bg-slate-950 flex items-center justify-center p-4 relative overflow-auto select-none">
             <div
               className="relative border border-white/10 rounded-xl shadow-2xl bg-white max-h-[68vh] aspect-[3/4] flex items-center justify-center overflow-visible transition-transform duration-100 ease-out origin-center"
               style={{ transform: `scale(${zoomLevel})` }}
@@ -3270,7 +3307,13 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                   onTouchStart={handleStartDraw}
                   onTouchMove={handleMovingDraw}
                   onTouchEnd={handleEndDraw}
-                  className="max-h-[67vh] max-w-full object-contain cursor-crosshair rounded-lg block"
+                  className={`max-h-[67vh] max-w-full object-contain rounded-lg block ${
+                    currentTool === 'move'
+                      ? isPanning ? 'cursor-grabbing' : 'cursor-grab'
+                      : currentTool === 'text'
+                        ? 'cursor-text'
+                        : 'cursor-crosshair'
+                  }`}
                 />
 
                 {/* Text Tool Absolute Overlay Input */}
