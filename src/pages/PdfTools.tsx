@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, Minus, Upload, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2, Maximize2, Share2, Edit3, Type, PenTool, Highlighter, MousePointer2, Eraser, Undo, Redo, Save, X } from 'lucide-react';
+import { RotateCw, Trash2, ArrowLeft, ArrowRight, Layers, FileImage, Image as ImageIcon, Download, RefreshCw, Plus, Minus, Upload, HelpCircle, FileText, GripHorizontal, FileDown, Minimize2, CheckCircle2, Maximize2, Share2, Edit3, Type, PenTool, Highlighter, MousePointer2, Eraser, Undo, Redo, Save, X, EyeOff, Award } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { useToast } from '../hooks/useToast';
@@ -2311,7 +2311,25 @@ interface CanvasEditorModalProps {
   onSaveAll: (updatedPages: PdfPageItem[]) => void;
 }
 
-type EditTool = 'draw' | 'highlight' | 'text' | 'shape' | 'signature' | 'image' | 'erase';
+type EditTool = 'draw' | 'highlight' | 'text' | 'shape' | 'signature' | 'image' | 'erase' | 'pixelate' | 'badge';
+
+const generateBadgeSVG = (text: string, colorHex: string): string => {
+  const width = 160;
+  const height = 45;
+  const borderRad = 8;
+  const strokeWidth = 3;
+  const fontColor = colorHex;
+  const borderColor = colorHex;
+  const bgColor = colorHex === '#000000' ? 'rgba(0, 0, 0, 0.08)' : colorHex === '#ffffff' ? 'rgba(255, 255, 255, 0.15)' : `${colorHex}15`;
+
+  const svgString = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+      <rect x="${strokeWidth/2}" y="${strokeWidth/2}" width="${width - strokeWidth}" height="${height - strokeWidth}" rx="${borderRad}" fill="${bgColor}" stroke="${borderColor}" stroke-width="${strokeWidth}"/>
+      <text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="900" fill="${fontColor}" letter-spacing="1.5">${text}</text>
+    </svg>
+  `;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
+};
 
 function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }: CanvasEditorModalProps) {
   const { addToast } = useToast();
@@ -2331,6 +2349,8 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   const [isDrawing, setIsDrawing] = useState(false);
   const [startX, setStartX] = useState(0);
   const [startY, setStartY] = useState(0);
+  const [lastX, setLastX] = useState(0);
+  const [lastY, setLastY] = useState(0);
   const [savedImageData, setSavedImageData] = useState<ImageData | null>(null);
 
   // Stamped item state
@@ -2537,8 +2557,8 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     setStartX(x);
     setStartY(y);
 
-    // Capture clean canvas state for shape overlays
-    if (currentTool === 'shape') {
+    // Capture clean canvas state for shape overlays and pixelate selections
+    if (currentTool === 'shape' || currentTool === 'pixelate') {
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       setSavedImageData(imgData);
     } else {
@@ -2568,11 +2588,22 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     if (!canvas || !ctx) return;
 
     const { x, y } = getCoordinates(e);
+    setLastX(x);
+    setLastY(y);
 
     if (currentTool === 'shape') {
       if (savedImageData) {
         ctx.putImageData(savedImageData, 0, 0);
         drawShapePreview(ctx, startX, startY, x, y);
+      }
+    } else if (currentTool === 'pixelate') {
+      if (savedImageData) {
+        ctx.putImageData(savedImageData, 0, 0);
+        ctx.strokeStyle = '#ef4444'; // Red dash boundary for selection
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(startX, startY, x - startX, y - startY);
+        ctx.setLineDash([]); // Reset dash state
       }
     } else {
       ctx.lineTo(x, y);
@@ -2583,8 +2614,58 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   const handleEndDraw = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
+
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx && currentTool === 'pixelate' && savedImageData) {
+      // Revert the dotted select preview border
+      ctx.putImageData(savedImageData, 0, 0);
+      // Apply pixelated blur over the finalized coordinates
+      applyPixelation(ctx, startX, startY, lastX, lastY);
+    }
+
     setSavedImageData(null);
     pushStateToHistory();
+  };
+
+  // Modern grid-based pixelation shader algorithm for privacy masking
+  const applyPixelation = (ctx: CanvasRenderingContext2D, sX: number, sY: number, eX: number, eY: number) => {
+    const x = Math.min(sX, eX);
+    const y = Math.min(sY, eY);
+    const w = Math.abs(sX - eX);
+    const h = Math.abs(sY - eY);
+    if (w < 4 || h < 4) return;
+
+    try {
+      const imgData = ctx.getImageData(x, y, w, h);
+      const data = imgData.data;
+      const pixelSize = 10; // size of the pixelated block chunks
+
+      for (let r = 0; r < h; r += pixelSize) {
+        for (let c = 0; c < w; c += pixelSize) {
+          // Grab top-left pixel in current 10x10 block chunk
+          const pixelIdx = (r * w + c) * 4;
+          const red = data[pixelIdx];
+          const green = data[pixelIdx + 1];
+          const blue = data[pixelIdx + 2];
+          const alpha = data[pixelIdx + 3];
+
+          // Fill block chunk
+          for (let dy = 0; dy < pixelSize && r + dy < h; dy++) {
+            for (let dx = 0; dx < pixelSize && c + dx < w; dx++) {
+              const idx = ((r + dy) * w + (c + dx)) * 4;
+              data[idx] = red;
+              data[idx + 1] = green;
+              data[idx + 2] = blue;
+              data[idx + 3] = alpha;
+            }
+          }
+        }
+      }
+      ctx.putImageData(imgData, x, y);
+    } catch (err) {
+      console.error('Failed to apply pixelation overlay:', err);
+    }
   };
 
   const drawShapePreview = (ctx: CanvasRenderingContext2D, sX: number, sY: number, eX: number, eY: number) => {
@@ -2976,7 +3057,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
             <div className="space-y-2 w-full">
               <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold hidden md:block">Interactive Tools</span>
               <div className="grid grid-cols-4 md:grid-cols-2 gap-1.5 w-full">
-                {(['draw', 'highlight', 'text', 'shape', 'signature', 'image', 'erase'] as const).map(tool => {
+                {(['draw', 'highlight', 'text', 'shape', 'signature', 'image', 'erase', 'pixelate', 'badge'] as const).map(tool => {
                   const active = currentTool === tool;
                   const icons = {
                     draw: PenTool,
@@ -2985,7 +3066,9 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                     shape: MousePointer2,
                     signature: Edit3,
                     image: ImageIcon,
-                    erase: Eraser
+                    erase: Eraser,
+                    pixelate: EyeOff,
+                    badge: Award
                   };
                   const labels = {
                     draw: 'Draw',
@@ -2994,29 +3077,31 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                     shape: 'Shapes',
                     signature: 'Signature',
                     image: 'Stamp Image',
-                    erase: 'Whiteout'
+                    erase: 'Whiteout',
+                    pixelate: 'Blur/Mask',
+                    badge: 'Doc Badge'
                   };
                   const Icon = icons[tool];
                   return (
                     <button
-                      key={tool}
-                      onClick={() => {
-                        setCurrentTool(tool);
-                        if (tool === 'signature') {
-                          setShowSignaturePad(true);
-                        } else if (tool === 'image') {
-                          fileInputRef.current?.click();
-                        }
-                      }}
-                      className={`flex flex-col items-center justify-center p-2 rounded-xl border text-[10px] font-medium transition-all ${
-                        active 
-                          ? 'bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/20' 
-                          : 'border-white/5 bg-white/5 text-slate-300 hover:bg-white/10'
-                      }`}
-                      title={labels[tool]}
+                       key={tool}
+                       onClick={() => {
+                         setCurrentTool(tool);
+                         if (tool === 'signature') {
+                           setShowSignaturePad(true);
+                         } else if (tool === 'image') {
+                           fileInputRef.current?.click();
+                         }
+                       }}
+                       className={`flex flex-col items-center justify-center p-2 rounded-xl border text-[10px] font-medium transition-all ${
+                         active 
+                           ? 'bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/20' 
+                           : 'border-white/5 bg-white/5 text-slate-300 hover:bg-white/10'
+                       }`}
+                       title={labels[tool]}
                     >
-                      <Icon size={16} />
-                      <span className="mt-1 font-semibold truncate hidden md:inline">{labels[tool]}</span>
+                       <Icon size={16} />
+                       <span className="mt-1 font-semibold truncate hidden md:inline">{labels[tool]}</span>
                     </button>
                   );
                 })}
@@ -3039,6 +3124,39 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                       }`}
                     >
                       {shape === 'rect' ? 'Square' : shape === 'circle' ? 'Circle' : 'Arrow'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Badge Sub-menu */}
+            {currentTool === 'badge' && (
+              <div className="space-y-1.5 w-full border-t border-white/5 pt-3 hidden md:block">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Select Stamp Badge</span>
+                <div className="grid grid-cols-2 gap-1 bg-black/25 p-1.5 rounded-xl border border-white/5">
+                  {[
+                    { label: 'APPROVED', color: '#10b981' },
+                    { label: 'CONFIDENTIAL', color: '#ef4444' },
+                    { label: 'REJECTED', color: '#dc2626' },
+                    { label: 'DRAFT', color: '#64748b' },
+                    { label: 'URGENT', color: '#f59e0b' },
+                    { label: 'VOID', color: '#b91c1c' },
+                    { label: 'FINAL', color: '#059669' },
+                    { label: 'COMPLETED', color: '#2563eb' }
+                  ].map(badge => (
+                    <button
+                      key={badge.label}
+                      onClick={() => {
+                        const stampUrl = generateBadgeSVG(badge.label, badge.color);
+                        setStampedImage(stampUrl);
+                        setCurrentTool('image');
+                        notify(`Badge "${badge.label}" loaded! Click on canvas to stamp.`, 'success');
+                      }}
+                      className="py-1 px-1.5 text-[9px] font-bold border border-white/5 hover:border-white/10 rounded-lg text-center transition-all bg-white/5 hover:bg-white/10"
+                      style={{ color: badge.color }}
+                    >
+                      {badge.label}
                     </button>
                   ))}
                 </div>
