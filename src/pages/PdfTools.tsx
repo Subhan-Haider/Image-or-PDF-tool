@@ -76,7 +76,7 @@ export default function PdfTools() {
   // --- Compiled PDF Result State (PDF Organizer + Images to PDF) ---
   const [compiledPdfResult, setCompiledPdfResult] = useState<{ url: string; filename: string } | null>(null);
   const [compiledImagesPdfResult, setCompiledImagesPdfResult] = useState<{ url: string; filename: string } | null>(null);
-  
+
   // --- Zoom Modal / Gallery State ---
   const [zoomGallery, setZoomGallery] = useState<{ images: string[]; index: number } | null>(null);
   const openZoom = (images: string[], index: number) => setZoomGallery({ images, index });
@@ -255,7 +255,7 @@ export default function PdfTools() {
       let runningSizeSum = 0;
       for (let i = 1; i <= totalPages; i++) {
         setCompressProgress({ current: i, total: totalPages, currentSize: runningSizeSum });
-        
+
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale });
 
@@ -359,7 +359,7 @@ export default function PdfTools() {
         notify(`Failed to load "${file.name}": The file is empty (0 bytes)`, 'error');
         continue;
       }
-      
+
       // Gracefully handle raw images dropped directly into PDF Editor Workspace
       if (file.type.startsWith('image/')) {
         try {
@@ -925,7 +925,7 @@ export default function PdfTools() {
           }
 
           const page = doc.addPage([targetW, targetH]);
-          
+
           let drawW = targetW;
           let drawH = targetH;
           let drawX = 0;
@@ -1005,7 +1005,7 @@ export default function PdfTools() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-surface-950 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* Header Title */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-primary-500/10 text-primary-500 dark:text-primary-400 mb-4 animate-pulse">
@@ -1021,13 +1021,13 @@ export default function PdfTools() {
 
         {/* Tab Switcher */}
         <div className="flex justify-center mb-8 px-2">
-          <div className="flex flex-wrap sm:flex-nowrap justify-center p-1.5 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-2xl gap-1 w-full max-w-3xl shadow-inner overflow-hidden">
+          <div className="flex flex-wrap sm:flex-nowrap justify-center p-2 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-2xl gap-1.5 w-full max-w-4xl shadow-inner overflow-hidden">
             {(['editor', 'to-images', 'from-images', 'compress', 'office-to-pdf'] as const).map(tab => {
               const active = activeTab === tab;
               const labels = {
                 'editor': { text: 'Page Management', mobileText: 'Manage', icon: Layers },
-                'to-images': { text: 'PDF to Images', mobileText: 'PDF to Img', icon: FileImage },
-                'from-images': { text: 'Images to PDF', mobileText: 'Img to PDF', icon: ImageIcon },
+                'to-images': { text: 'PDF to Images', mobileText: 'PDF→Img', icon: FileImage },
+                'from-images': { text: 'Images to PDF', mobileText: 'Img→PDF', icon: ImageIcon },
                 'compress': { text: 'Compress PDF', mobileText: 'Compress', icon: FileDown },
                 'office-to-pdf': { text: 'Office to PDF', mobileText: 'Office', icon: FileText }
               };
@@ -1037,13 +1037,12 @@ export default function PdfTools() {
                   key={tab}
                   type="button"
                   onClick={() => { setActiveTab(tab); clearWorkspace(); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
-                    active
-                      ? 'bg-white dark:bg-slate-600 text-primary-600 dark:text-white shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-xl text-sm sm:text-base font-semibold whitespace-nowrap transition-all duration-200 ${active
+                    ? 'bg-white dark:bg-slate-600 text-primary-600 dark:text-white shadow-md'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60'
+                    }`}
                 >
-                  <Icon size={14} className="flex-shrink-0" />
+                  <Icon size={17} className="flex-shrink-0" />
                   <span className="hidden sm:inline">{labels[tab].text}</span>
                   <span className="inline sm:hidden">{labels[tab].mobileText}</span>
                 </button>
@@ -1054,7 +1053,7 @@ export default function PdfTools() {
 
         {/* Workspace Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* Main workspace area */}
           <div className="lg:col-span-8 space-y-6">
 
@@ -1072,11 +1071,11 @@ export default function PdfTools() {
                     </p>
                     <label className="btn-base bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-xl cursor-pointer">
                       Browse Files
-                      <input 
-                        type="file" 
-                        accept=".docx,.xlsx,.xls,.csv,.txt" 
-                        className="hidden" 
-                        onChange={e => e.target.files?.[0] && handleOfficeUpload(e.target.files[0])} 
+                      <input
+                        type="file"
+                        accept=".docx,.xlsx,.xls,.csv,.txt"
+                        className="hidden"
+                        onChange={e => e.target.files?.[0] && handleOfficeUpload(e.target.files[0])}
                       />
                     </label>
                   </Card>
@@ -1091,8 +1090,8 @@ export default function PdfTools() {
                           Format: {officeFileType} File (Processed Locally)
                         </p>
                       </div>
-                      <button 
-                        onClick={() => { setOfficeFile(null); setOfficeHtml(''); setOfficeFileType(null); }} 
+                      <button
+                        onClick={() => { setOfficeFile(null); setOfficeHtml(''); setOfficeFileType(null); }}
                         className="text-xs text-red-400 hover:text-red-300"
                       >
                         Change File
@@ -1101,7 +1100,7 @@ export default function PdfTools() {
 
                     {/* High-Fidelity Paper Page Preview Sheet */}
                     <div className="bg-slate-200 dark:bg-surface-900 rounded-xl p-4 sm:p-8 flex justify-center overflow-auto max-h-[600px] border border-black/5 dark:border-white/5">
-                      <div 
+                      <div
                         className="bg-white text-slate-900 p-8 shadow-2xl rounded-sm w-[595px] min-h-[842px] border border-slate-300 font-sans prose prose-sm max-w-none text-left overflow-auto"
                         dangerouslySetInnerHTML={{ __html: officeHtml }}
                       />
@@ -1110,7 +1109,7 @@ export default function PdfTools() {
                 )}
               </>
             )}
-            
+
             {/* Split Page 1: PDF Organizer / Merger */}
             {activeTab === 'editor' && (
               <>
@@ -1125,12 +1124,12 @@ export default function PdfTools() {
                     </p>
                     <label className="btn-base bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-xl cursor-pointer">
                       Browse Files
-                      <input 
-                        type="file" 
-                        multiple 
-                        accept="application/pdf,image/*" 
-                        className="hidden" 
-                        onChange={e => e.target.files && handlePdfUpload(Array.from(e.target.files))} 
+                      <input
+                        type="file"
+                        multiple
+                        accept="application/pdf,image/*"
+                        className="hidden"
+                        onChange={e => e.target.files && handlePdfUpload(Array.from(e.target.files))}
                       />
                     </label>
                   </Card>
@@ -1154,11 +1153,10 @@ export default function PdfTools() {
                               key={mode}
                               type="button"
                               onClick={() => setPageSizeMode(mode)}
-                              className={`px-2 py-0.5 rounded uppercase font-semibold transition-all ${
-                                pageSizeMode === mode
-                                  ? 'bg-white dark:bg-surface-800 text-slate-900 dark:text-white shadow-sm'
-                                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                              }`}
+                              className={`px-2 py-0.5 rounded uppercase font-semibold transition-all ${pageSizeMode === mode
+                                ? 'bg-white dark:bg-surface-800 text-slate-900 dark:text-white shadow-sm'
+                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                }`}
                               title={`Zoom to ${mode}`}
                             >
                               {mode === 'small' ? 'S' : mode === 'medium' ? 'M' : mode === 'large' ? 'L' : 'XL'}
@@ -1166,8 +1164,8 @@ export default function PdfTools() {
                           ))}
                         </div>
 
-                        <button 
-                          onClick={() => handlePdfUpload([])} 
+                        <button
+                          onClick={() => handlePdfUpload([])}
                           className="text-xs text-red-450 hover:text-red-400 flex items-center gap-1"
                         >
                           <Trash2 size={12} /> Clear all
@@ -1176,28 +1174,25 @@ export default function PdfTools() {
                     </div>
 
                     {/* Page Grid - Adaptive zoom */}
-                    <div className={`grid gap-4 ${
-                      pageSizeMode === 'small' 
-                        ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2' 
-                        : pageSizeMode === 'large'
+                    <div className={`grid gap-4 ${pageSizeMode === 'small'
+                      ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2'
+                      : pageSizeMode === 'large'
                         ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'
                         : pageSizeMode === 'extra-large'
-                        ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8 w-full'
-                        : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'
-                    }`}>
+                          ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8 w-full'
+                          : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'
+                      }`}>
                       {pdfPages.map((page, i) => (
-                        <div 
-                          key={page.id} 
+                        <div
+                          key={page.id}
                           draggable
                           onDragStart={e => handleDragStart(e, i)}
                           onDragOver={handleDragOver}
                           onDragEnd={handleDragEnd}
                           onDrop={e => handleDrop(e, i)}
-                          className={`relative rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex flex-col group cursor-grab active:cursor-grabbing transition-all duration-200 ${
-                            pageSizeMode === 'extra-large' ? 'p-4 shadow-xl border-primary-500/20' : 'p-2'
-                          } ${
-                            draggedIndex === i ? 'opacity-40 scale-95 border-primary-500' : 'opacity-100 hover:border-black/25 dark:hover:border-white/25'
-                          }`}
+                          className={`relative rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex flex-col group cursor-grab active:cursor-grabbing transition-all duration-200 ${pageSizeMode === 'extra-large' ? 'p-4 shadow-xl border-primary-500/20' : 'p-2'
+                            } ${draggedIndex === i ? 'opacity-40 scale-95 border-primary-500' : 'opacity-100 hover:border-black/25 dark:hover:border-white/25'
+                            }`}
                         >
                           {/* Mini Page index Badge */}
                           <div className="absolute top-3 left-3 z-10 px-2 py-0.5 rounded-full bg-slate-900/80 text-white text-xs font-semibold">
@@ -1206,16 +1201,16 @@ export default function PdfTools() {
 
                           {/* Thumbnail Preview with rotation angle */}
                           <div className="aspect-[3/4] rounded-lg overflow-hidden bg-white/20 relative flex items-center justify-center">
-                            <img 
-                              src={page.thumbnail} 
-                              alt={`Page ${i + 1}`} 
+                            <img
+                              src={page.thumbnail}
+                              alt={`Page ${i + 1}`}
                               className="w-full h-full object-cover transition-transform duration-300"
                               style={{ transform: `rotate(${page.rotation}deg)` }}
                             />
-                            
+
                             {/* Floating Action Toolbar - Fully Mobile & Touch Friendly */}
                             <div className="absolute top-2 right-2 z-25 flex items-center gap-1.5 bg-black/50 backdrop-blur-md p-1 rounded-lg shadow-lg border border-white/10">
-                              <button 
+                              <button
                                 type="button"
                                 onClick={() => openZoom(pdfPages.map(p => p.thumbnail), i)}
                                 className="p-1.5 rounded-md bg-white/10 text-white hover:bg-primary-500 hover:text-white transition-all"
@@ -1223,7 +1218,7 @@ export default function PdfTools() {
                               >
                                 <Maximize2 size={12} />
                               </button>
-                              <button 
+                              <button
                                 type="button"
                                 onClick={() => openEditorModal(page, i)}
                                 className="p-1.5 rounded-md bg-white/10 text-white hover:bg-emerald-500 hover:text-white transition-all animate-pulse"
@@ -1231,7 +1226,7 @@ export default function PdfTools() {
                               >
                                 <Edit3 size={12} />
                               </button>
-                              <button 
+                              <button
                                 type="button"
                                 onClick={() => rotatePage(page.id)}
                                 className="p-1.5 rounded-md bg-white/10 text-white hover:bg-primary-500 hover:text-white transition-all"
@@ -1239,7 +1234,7 @@ export default function PdfTools() {
                               >
                                 <RotateCw size={12} />
                               </button>
-                              <button 
+                              <button
                                 type="button"
                                 onClick={() => deletePage(page.id)}
                                 className="p-1.5 rounded-md bg-red-500/20 text-red-300 hover:bg-red-600 hover:text-white transition-all"
@@ -1257,8 +1252,8 @@ export default function PdfTools() {
 
                           {/* Tap Reorder Controls */}
                           <div className="flex items-center justify-between border-t border-black/5 dark:border-white/5 mt-2 pt-2">
-                            <button 
-                              disabled={i === 0} 
+                            <button
+                              disabled={i === 0}
                               onClick={() => movePage(i, 'left')}
                               className="p-1 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white disabled:opacity-30"
                             >
@@ -1268,8 +1263,8 @@ export default function PdfTools() {
                               <GripHorizontal size={10} className="text-slate-400 animate-pulse" />
                               <span>Drag to move</span>
                             </div>
-                            <button 
-                              disabled={i === pdfPages.length - 1} 
+                            <button
+                              disabled={i === pdfPages.length - 1}
                               onClick={() => movePage(i, 'right')}
                               className="p-1 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white disabled:opacity-30"
                             >
@@ -1283,12 +1278,12 @@ export default function PdfTools() {
                       <label className="border-2 border-dashed border-black/10 dark:border-white/20 rounded-xl flex flex-col items-center justify-center aspect-[3/4] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                         <Plus size={24} className="text-slate-400 mb-1" />
                         <span className="text-xs text-slate-500">Add PDF / Image</span>
-                        <input 
-                          type="file" 
-                          multiple 
-                          accept="application/pdf,image/*" 
-                          className="hidden" 
-                          onChange={e => e.target.files && handlePdfUpload(Array.from(e.target.files))} 
+                        <input
+                          type="file"
+                          multiple
+                          accept="application/pdf,image/*"
+                          className="hidden"
+                          onChange={e => e.target.files && handlePdfUpload(Array.from(e.target.files))}
                         />
                       </label>
                     </div>
@@ -1312,11 +1307,11 @@ export default function PdfTools() {
                     </p>
                     <label className="btn-base bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-xl cursor-pointer">
                       Browse File
-                      <input 
-                        type="file" 
-                        accept="application/pdf" 
-                        className="hidden" 
-                        onChange={e => e.target.files?.[0] && handlePdfToImgUpload(e.target.files[0])} 
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={e => e.target.files?.[0] && handlePdfToImgUpload(e.target.files[0])}
                       />
                     </label>
                   </Card>
@@ -1331,8 +1326,8 @@ export default function PdfTools() {
                           Total pages found: {pdfToImgPages.length}
                         </p>
                       </div>
-                      <button 
-                        onClick={() => { setPdfToImgFile(null); setPdfToImgPages([]); }} 
+                      <button
+                        onClick={() => { setPdfToImgFile(null); setPdfToImgPages([]); }}
                         className="text-xs text-red-400 hover:text-red-300"
                       >
                         Change File
@@ -1355,9 +1350,9 @@ export default function PdfTools() {
                                 <Download size={10} /> Download
                               </Button>
                             </a>
-                            <Button 
-                              size="sm" 
-                              variant="secondary" 
+                            <Button
+                              size="sm"
+                              variant="secondary"
                               onClick={() => handleShareFile(page.thumbnail, `page_${page.pageNum}.${pdfToImgFormat}`, `image/${pdfToImgFormat}`)}
                               className="text-[10px] py-1.5 flex items-center justify-center gap-1 px-2 border-black/10 dark:border-white/10"
                               title="Share Page Image"
@@ -1387,12 +1382,12 @@ export default function PdfTools() {
                     </p>
                     <label className="btn-base bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-xl cursor-pointer">
                       Browse Images
-                      <input 
-                        type="file" 
-                        multiple 
-                        accept="image/*" 
-                        className="hidden" 
-                        onChange={e => e.target.files && handleImageUpload(Array.from(e.target.files))} 
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => e.target.files && handleImageUpload(Array.from(e.target.files))}
                       />
                     </label>
                   </Card>
@@ -1411,11 +1406,10 @@ export default function PdfTools() {
                               key={mode}
                               type="button"
                               onClick={() => setPageSizeMode(mode)}
-                              className={`px-2 py-0.5 rounded uppercase font-semibold transition-all ${
-                                pageSizeMode === mode
-                                  ? 'bg-white dark:bg-surface-800 text-slate-900 dark:text-white shadow-sm'
-                                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                              }`}
+                              className={`px-2 py-0.5 rounded uppercase font-semibold transition-all ${pageSizeMode === mode
+                                ? 'bg-white dark:bg-surface-800 text-slate-900 dark:text-white shadow-sm'
+                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                }`}
                               title={`Zoom to ${mode}`}
                             >
                               {mode === 'small' ? 'S' : mode === 'medium' ? 'M' : mode === 'large' ? 'L' : 'XL'}
@@ -1423,8 +1417,8 @@ export default function PdfTools() {
                           ))}
                         </div>
 
-                        <button 
-                          onClick={() => { setImagePages([]); }} 
+                        <button
+                          onClick={() => { setImagePages([]); }}
                           className="text-xs text-red-450 hover:text-red-400"
                         >
                           Clear all
@@ -1432,39 +1426,36 @@ export default function PdfTools() {
                       </div>
                     </div>
 
-                    <div className={`grid gap-4 ${
-                      pageSizeMode === 'small' 
-                        ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2' 
-                        : pageSizeMode === 'large'
+                    <div className={`grid gap-4 ${pageSizeMode === 'small'
+                      ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2'
+                      : pageSizeMode === 'large'
                         ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'
                         : pageSizeMode === 'extra-large'
-                        ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8 w-full'
-                        : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'
-                    }`}>
+                          ? 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8 w-full'
+                          : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'
+                      }`}>
                       {imagePages.map((item, i) => (
-                        <div 
-                          key={item.id} 
+                        <div
+                          key={item.id}
                           draggable
                           onDragStart={e => handleDragStart(e, i)}
                           onDragOver={handleDragOver}
                           onDragEnd={handleDragEnd}
                           onDrop={e => handleDrop(e, i)}
-                          className={`relative rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex flex-col group cursor-grab active:cursor-grabbing transition-all duration-200 ${
-                            pageSizeMode === 'extra-large' ? 'p-4 shadow-xl border-primary-500/20' : 'p-2'
-                          } ${
-                            draggedIndex === i ? 'opacity-40 scale-95 border-primary-500' : 'opacity-100 hover:border-black/25 dark:hover:border-white/25'
-                          }`}
+                          className={`relative rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex flex-col group cursor-grab active:cursor-grabbing transition-all duration-200 ${pageSizeMode === 'extra-large' ? 'p-4 shadow-xl border-primary-500/20' : 'p-2'
+                            } ${draggedIndex === i ? 'opacity-40 scale-95 border-primary-500' : 'opacity-100 hover:border-black/25 dark:hover:border-white/25'
+                            }`}
                         >
                           <div className="absolute top-3 left-3 z-10 px-2 py-0.5 rounded-full bg-slate-900/80 text-white text-xs font-semibold">
                             Img {i + 1}
                           </div>
-                          
+
                           <div className="aspect-[3/4] rounded-lg overflow-hidden bg-white/20 relative flex items-center justify-center">
                             <img src={item.preview} alt={item.name} className="w-full h-full object-cover" />
-                            
+
                             {/* Floating Actions - Fully Touch & Mobile Friendly */}
                             <div className="absolute top-2 right-2 z-25 flex items-center gap-1.5 bg-black/50 backdrop-blur-md p-1 rounded-lg shadow-lg border border-white/10">
-                              <button 
+                              <button
                                 type="button"
                                 onClick={() => openZoom(imagePages.map(p => p.preview), i)}
                                 className="p-1.5 rounded-md bg-white/10 text-white hover:bg-primary-500 hover:text-white transition-all animate-pulse"
@@ -1472,7 +1463,7 @@ export default function PdfTools() {
                               >
                                 <Maximize2 size={12} />
                               </button>
-                              <button 
+                              <button
                                 type="button"
                                 onClick={() => deleteImagePage(item.id)}
                                 className="p-1.5 rounded-md bg-red-500/20 text-red-300 hover:bg-red-600 hover:text-white transition-all"
@@ -1489,8 +1480,8 @@ export default function PdfTools() {
 
                           {/* Re-order controls */}
                           <div className="flex items-center justify-between border-t border-black/5 dark:border-white/5 mt-2 pt-2">
-                            <button 
-                              disabled={i === 0} 
+                            <button
+                              disabled={i === 0}
                               onClick={() => moveImagePage(i, 'left')}
                               className="p-1 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white disabled:opacity-30"
                             >
@@ -1500,8 +1491,8 @@ export default function PdfTools() {
                               <GripHorizontal size={10} className="text-slate-400 animate-pulse" />
                               <span>Drag to move</span>
                             </div>
-                            <button 
-                              disabled={i === imagePages.length - 1} 
+                            <button
+                              disabled={i === imagePages.length - 1}
                               onClick={() => moveImagePage(i, 'right')}
                               className="p-1 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white disabled:opacity-30"
                             >
@@ -1515,12 +1506,12 @@ export default function PdfTools() {
                       <label className="border-2 border-dashed border-black/10 dark:border-white/20 rounded-xl flex flex-col items-center justify-center aspect-[3/4] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                         <Plus size={24} className="text-slate-400 mb-1" />
                         <span className="text-xs text-slate-500">Add Image</span>
-                        <input 
-                          type="file" 
-                          multiple 
-                          accept="image/*" 
-                          className="hidden" 
-                          onChange={e => e.target.files && handleImageUpload(Array.from(e.target.files))} 
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          className="hidden"
+                          onChange={e => e.target.files && handleImageUpload(Array.from(e.target.files))}
                         />
                       </label>
                     </div>
@@ -1543,11 +1534,11 @@ export default function PdfTools() {
                     </p>
                     <label className="btn-base bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-xl cursor-pointer">
                       Browse File
-                      <input 
-                        type="file" 
-                        accept="application/pdf" 
-                        className="hidden" 
-                        onChange={e => e.target.files?.[0] && handleCompressFileUpload(e.target.files[0])} 
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={e => e.target.files?.[0] && handleCompressFileUpload(e.target.files[0])}
                       />
                     </label>
                   </Card>
@@ -1562,8 +1553,8 @@ export default function PdfTools() {
                           Original Size: {formatSize(compressFile.size)}
                         </p>
                       </div>
-                      <button 
-                        onClick={() => { setCompressFile(null); setCompressResult(null); setCompressProgress(null); }} 
+                      <button
+                        onClick={() => { setCompressFile(null); setCompressResult(null); setCompressProgress(null); }}
                         className="text-xs text-red-400 hover:text-red-300"
                         disabled={isProcessing}
                       >
@@ -1579,7 +1570,7 @@ export default function PdfTools() {
                           <span>{Math.round((compressProgress.current / compressProgress.total) * 100)}%</span>
                         </div>
                         <div className="w-full bg-black/10 dark:bg-white/10 h-2 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="bg-primary-500 h-full rounded-full transition-all duration-300"
                             style={{ width: `${(compressProgress.current / compressProgress.total) * 100}%` }}
                           />
@@ -1606,7 +1597,7 @@ export default function PdfTools() {
                         <h4 className="text-lg font-semibold text-emerald-600 dark:text-emerald-450">
                           Compression Complete!
                         </h4>
-                        
+
                         {/* Compression stats container */}
                         <div className="grid grid-cols-3 gap-4 max-w-md mx-auto py-2 bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 text-center mt-2">
                           <div>
@@ -1630,21 +1621,21 @@ export default function PdfTools() {
                         </div>
 
                         <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
-                          <a 
+                          <a
                             href={compressResult.downloadUrl}
                             download={compressResult.filename}
                             className="btn-base bg-primary-500 hover:bg-primary-600 text-white px-6 py-2.5 rounded-xl font-medium inline-flex items-center gap-2 shadow-lg hover:shadow-primary-500/25 transition-all flex-1 justify-center"
                           >
                             <Download size={16} /> Download PDF
                           </a>
-                          <button 
+                          <button
                             onClick={() => handleShareFile(compressResult.downloadUrl, compressResult.filename, 'application/pdf')}
                             className="btn-base bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-medium inline-flex items-center gap-2 shadow-lg hover:shadow-emerald-500/25 transition-all flex-1 justify-center"
                             title="Share File to Mobile/Desktop Apps"
                           >
                             <Share2 size={16} /> Share PDF
                           </button>
-                          <button 
+                          <button
                             onClick={() => { setCompressFile(null); setCompressResult(null); setCompressProgress(null); }}
                             className="btn-base bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 px-6 py-2.5 rounded-xl font-medium flex-1 justify-center"
                           >
@@ -1692,7 +1683,7 @@ export default function PdfTools() {
 
           {/* Sidebar controls area */}
           <div className="lg:col-span-4 space-y-6">
-            
+
             {/* Sidebar 1: PDF Organizer Settings */}
             {activeTab === 'editor' && (
               <Card>
@@ -1704,12 +1695,12 @@ export default function PdfTools() {
                   {/* Filename */}
                   <div>
                     <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">Output Filename</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={editorFilename}
                       onChange={e => setEditorFilename(e.target.value)}
                       placeholder="compiled_document"
-                      className="w-full bg-black/5 dark:bg-surface-800 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500" 
+                      className="w-full bg-black/5 dark:bg-surface-800 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
 
@@ -1740,11 +1731,10 @@ export default function PdfTools() {
                                 key={mode}
                                 type="button"
                                 onClick={() => setEditorOrientation(mode)}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-medium border capitalize transition-all ${
-                                  editorOrientation === mode
-                                    ? 'bg-primary-500/10 border-primary-500/30 text-primary-500'
-                                    : 'bg-black/5 dark:bg-white/5 border-transparent text-slate-600 dark:text-slate-400'
-                                }`}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-medium border capitalize transition-all ${editorOrientation === mode
+                                  ? 'bg-primary-500/10 border-primary-500/30 text-primary-500'
+                                  : 'bg-black/5 dark:bg-white/5 border-transparent text-slate-600 dark:text-slate-400'
+                                  }`}
                               >
                                 {mode}
                               </button>
@@ -1796,27 +1786,26 @@ export default function PdfTools() {
                   <div className="space-y-4 border-t border-black/5 dark:border-white/5 pt-3">
                     <div>
                       <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">Text Watermark Overlay (Bottom Center)</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={editorWatermark}
                         onChange={e => setEditorWatermark(e.target.value)}
                         placeholder="e.g. Confidential"
-                        className="w-full bg-black/5 dark:bg-surface-800 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500" 
+                        className="w-full bg-black/5 dark:bg-surface-800 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
                       />
                     </div>
-                    
+
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input 
-                        type="checkbox" 
-                        checked={editorPageNumbers} 
-                        onChange={e => setEditorPageNumbers(e.target.checked)} 
-                        className="hidden" 
+                      <input
+                        type="checkbox"
+                        checked={editorPageNumbers}
+                        onChange={e => setEditorPageNumbers(e.target.checked)}
+                        className="hidden"
                       />
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                        editorPageNumbers 
-                          ? 'bg-primary-500 border-primary-500 text-white' 
-                          : 'border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 group-hover:border-primary-500/50'
-                      }`}>
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${editorPageNumbers
+                        ? 'bg-primary-500 border-primary-500 text-white'
+                        : 'border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 group-hover:border-primary-500/50'
+                        }`}>
                         {editorPageNumbers && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
                       </div>
                       <span className="text-sm text-slate-700 dark:text-slate-300 select-none group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
@@ -1827,7 +1816,7 @@ export default function PdfTools() {
                 </div>
 
                 <div className="mt-6 border-t border-black/5 dark:border-white/5 pt-4 space-y-3">
-                  <Button 
+                  <Button
                     onClick={() => { setCompiledPdfResult(null); handleCompilePdf(); }}
                     disabled={pdfPages.length === 0 || isProcessing}
                     className="w-full py-3 flex items-center justify-center gap-2"
@@ -1889,20 +1878,20 @@ export default function PdfTools() {
                         <span>Compression Quality</span>
                         <span>{pdfToImgQuality}%</span>
                       </div>
-                      <input 
-                        type="range" 
-                        min={10} 
-                        max={100} 
+                      <input
+                        type="range"
+                        min={10}
+                        max={100}
                         value={pdfToImgQuality}
                         onChange={e => setPdfToImgQuality(Number(e.target.value))}
-                        className="w-full accent-primary-500" 
+                        className="w-full accent-primary-500"
                       />
                     </div>
                   )}
                 </div>
 
                 <div className="mt-6 border-t border-black/5 dark:border-white/5 pt-4">
-                  <Button 
+                  <Button
                     onClick={handleDownloadAllImages}
                     disabled={pdfToImgPages.length === 0 || isProcessing}
                     className="w-full py-3 flex items-center justify-center gap-2"
@@ -1924,12 +1913,12 @@ export default function PdfTools() {
                   {/* Filename */}
                   <div>
                     <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">Output Filename</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={imagesFilename}
                       onChange={e => setImagesFilename(e.target.value)}
                       placeholder="images_document"
-                      className="w-full bg-black/5 dark:bg-surface-800 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500" 
+                      className="w-full bg-black/5 dark:bg-surface-800 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
 
@@ -1959,11 +1948,10 @@ export default function PdfTools() {
                                 key={mode}
                                 type="button"
                                 onClick={() => setImagesOrientation(mode)}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-medium border capitalize transition-all ${
-                                  imagesOrientation === mode
-                                    ? 'bg-primary-500/10 border-primary-500/30 text-primary-500'
-                                    : 'bg-black/5 dark:bg-white/5 border-transparent text-slate-600 dark:text-slate-400'
-                                }`}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-medium border capitalize transition-all ${imagesOrientation === mode
+                                  ? 'bg-primary-500/10 border-primary-500/30 text-primary-500'
+                                  : 'bg-black/5 dark:bg-white/5 border-transparent text-slate-600 dark:text-slate-400'
+                                  }`}
                               >
                                 {mode}
                               </button>
@@ -1990,7 +1978,7 @@ export default function PdfTools() {
                 </div>
 
                 <div className="mt-6 border-t border-black/5 dark:border-white/5 pt-4 space-y-3">
-                  <Button 
+                  <Button
                     onClick={() => { setCompiledImagesPdfResult(null); handleCompileImagesToPdf(); }}
                     disabled={imagePages.length === 0 || isProcessing}
                     className="w-full py-3 flex items-center justify-center gap-2"
@@ -2033,12 +2021,12 @@ export default function PdfTools() {
                   {/* Filename */}
                   <div>
                     <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">Output Filename</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={officeFilename}
                       onChange={e => setOfficeFilename(e.target.value)}
                       placeholder="compiled_office_document"
-                      className="w-full bg-black/5 dark:bg-surface-800 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500" 
+                      className="w-full bg-black/5 dark:bg-surface-800 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
 
@@ -2050,7 +2038,7 @@ export default function PdfTools() {
                 </div>
 
                 <div className="mt-6 border-t border-black/5 dark:border-white/5 pt-4">
-                  <Button 
+                  <Button
                     onClick={handleCompileOfficeToPdf}
                     disabled={!officeFile || isProcessing}
                     className="w-full py-3 flex items-center justify-center gap-2"
@@ -2079,36 +2067,35 @@ export default function PdfTools() {
                     </label>
                     <div className="space-y-2.5">
                       {[
-                        { 
-                          id: 'high', 
-                          title: 'High Compression', 
-                          desc: 'Smallest file size, standard image quality' 
+                        {
+                          id: 'high',
+                          title: 'High Compression',
+                          desc: 'Smallest file size, standard image quality'
                         },
-                        { 
-                          id: 'medium', 
-                          title: 'Medium Compression', 
-                          desc: 'Recommended balance of size & quality' 
+                        {
+                          id: 'medium',
+                          title: 'Medium Compression',
+                          desc: 'Recommended balance of size & quality'
                         },
-                        { 
-                          id: 'low', 
-                          title: 'Low Compression', 
-                          desc: 'High image quality, minor size reduction' 
+                        {
+                          id: 'low',
+                          title: 'Low Compression',
+                          desc: 'High image quality, minor size reduction'
                         },
-                        { 
-                          id: 'preserve', 
-                          title: 'Preserve Quality', 
-                          desc: 'Maximum image fidelity & font resolution' 
+                        {
+                          id: 'preserve',
+                          title: 'Preserve Quality',
+                          desc: 'Maximum image fidelity & font resolution'
                         }
                       ].map(mode => (
                         <button
                           key={mode.id}
                           type="button"
                           onClick={() => setCompressMode(mode.id as any)}
-                          className={`w-full text-left p-3 rounded-xl border transition-all ${
-                            compressMode === mode.id
-                              ? 'border-primary-500 bg-primary-500/5 dark:bg-primary-500/10 text-slate-900 dark:text-white'
-                              : 'border-black/10 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 text-slate-600 dark:text-slate-400'
-                          }`}
+                          className={`w-full text-left p-3 rounded-xl border transition-all ${compressMode === mode.id
+                            ? 'border-primary-500 bg-primary-500/5 dark:bg-primary-500/10 text-slate-900 dark:text-white'
+                            : 'border-black/10 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 text-slate-600 dark:text-slate-400'
+                            }`}
                         >
                           <div className="text-xs font-semibold">{mode.title}</div>
                           <div className="text-[10px] text-slate-500 dark:text-slate-550 mt-0.5">
@@ -2121,7 +2108,7 @@ export default function PdfTools() {
                 </div>
 
                 <div className="mt-6 border-t border-black/5 dark:border-white/5 pt-4">
-                  <Button 
+                  <Button
                     onClick={handleCompressPdf}
                     disabled={compressFile === null || isProcessing}
                     className="w-full py-3 flex items-center justify-center gap-2"
@@ -2137,18 +2124,18 @@ export default function PdfTools() {
             )}
 
             {/* Secondary Action: Reset Workspace */}
-            {((activeTab === 'editor' && pdfPages.length > 0) || 
-              (activeTab === 'to-images' && pdfToImgFile) || 
+            {((activeTab === 'editor' && pdfPages.length > 0) ||
+              (activeTab === 'to-images' && pdfToImgFile) ||
               (activeTab === 'from-images' && imagePages.length > 0) ||
               (activeTab === 'compress' && compressFile) ||
               (activeTab === 'office-to-pdf' && officeFile)) && (
-              <button 
-                onClick={clearWorkspace}
-                className="w-full py-2.5 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/5 text-sm font-medium transition-all"
-              >
-                Clear Workspace
-              </button>
-            )}
+                <button
+                  onClick={clearWorkspace}
+                  className="w-full py-2.5 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/5 text-sm font-medium transition-all"
+                >
+                  Clear Workspace
+                </button>
+              )}
 
           </div>
 
@@ -2159,7 +2146,7 @@ export default function PdfTools() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       {zoomGallery && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl"
           onClick={closeZoom}
         >
@@ -2185,7 +2172,7 @@ export default function PdfTools() {
             <span className="text-[10px] text-slate-400 font-semibold bg-black/50 px-3 py-1.5 rounded-lg border border-white/10 tracking-wide uppercase hidden sm:flex">
               ← → Arrow Keys to navigate · ESC to close
             </span>
-            <button 
+            <button
               onClick={closeZoom}
               className="p-2 rounded-xl bg-white/10 hover:bg-red-500 text-white transition-all shadow-lg border border-white/10"
               title="Close Preview"
@@ -2215,15 +2202,15 @@ export default function PdfTools() {
           </button>
 
           {/* Image container */}
-          <div 
+          <div
             className="relative max-w-4xl max-h-[85vh] w-full h-full flex items-center justify-center px-16 sm:px-20"
             onClick={e => e.stopPropagation()}
           >
             <div className="bg-white/5 p-2 sm:p-3 rounded-2xl border border-white/10 shadow-2xl overflow-hidden max-w-full max-h-full flex items-center justify-center">
-              <img 
+              <img
                 key={zoomGallery.index}
-                src={zoomGallery.images[zoomGallery.index]} 
-                alt={`Preview ${zoomGallery.index + 1}`} 
+                src={zoomGallery.images[zoomGallery.index]}
+                alt={`Preview ${zoomGallery.index + 1}`}
                 className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-xl transition-opacity duration-200"
               />
             </div>
@@ -2236,11 +2223,10 @@ export default function PdfTools() {
                 <button
                   key={idx}
                   onClick={e => { e.stopPropagation(); setZoomGallery(prev => prev ? { ...prev, index: idx } : null); }}
-                  className={`rounded-full transition-all duration-200 ${
-                    idx === zoomGallery.index
-                      ? 'w-5 h-2 bg-primary-500'
-                      : 'w-2 h-2 bg-white/30 hover:bg-white/60'
-                  }`}
+                  className={`rounded-full transition-all duration-200 ${idx === zoomGallery.index
+                    ? 'w-5 h-2 bg-primary-500'
+                    : 'w-2 h-2 bg-white/30 hover:bg-white/60'
+                    }`}
                   title={`Go to page ${idx + 1}`}
                 />
               ))}
@@ -2250,7 +2236,7 @@ export default function PdfTools() {
       )}
 
       {activeEditPage && (
-        <CanvasEditorModal 
+        <CanvasEditorModal
           page={activeEditPage.page}
           index={activeEditPage.index}
           allPages={pdfPages}
@@ -2293,7 +2279,7 @@ const generateBadgeSVG = (text: string, colorHex: string): string => {
 
   const svgString = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-      <rect x="${strokeWidth/2}" y="${strokeWidth/2}" width="${width - strokeWidth}" height="${height - strokeWidth}" rx="${borderRad}" fill="${bgColor}" stroke="${borderColor}" stroke-width="${strokeWidth}"/>
+      <rect x="${strokeWidth / 2}" y="${strokeWidth / 2}" width="${width - strokeWidth}" height="${height - strokeWidth}" rx="${borderRad}" fill="${bgColor}" stroke="${borderColor}" stroke-width="${strokeWidth}"/>
       <text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="900" fill="${fontColor}" letter-spacing="1.5">${text}</text>
     </svg>
   `;
@@ -2313,7 +2299,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   const [color, setColor] = useState('#3b82f6'); // Default primary blue
   const [lineWidth, setLineWidth] = useState(8);
   const [shapeType, setShapeType] = useState<'rect' | 'circle' | 'arrow'>('rect');
-  
+
   // Drawing states
   const [isDrawing, setIsDrawing] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -2353,12 +2339,12 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isCtrl = e.ctrlKey || e.metaKey;
-      
+
       // Stop keyboard triggers if user is actively typing in inputs (like Text Overlay)
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
         return;
       }
-      
+
       if (isCtrl) {
         if (e.key === '=' || e.key === '+') {
           e.preventDefault();
@@ -2417,16 +2403,16 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     img.onload = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      
+
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
       setCanvasDimensions({ width: img.naturalWidth, height: img.naturalHeight });
-      
+
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-      
+
       ctx.drawImage(img, 0, 0);
-      
+
       const initialData = canvas.toDataURL('image/png');
       setHistory([initialData]);
       setHistoryIndex(0);
@@ -2474,7 +2460,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    
+
     let clientX, clientY;
     if ('touches' in e) {
       if (e.touches.length === 0) return { x: 0, y: 0 };
@@ -2484,10 +2470,10 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
       clientX = e.clientX;
       clientY = e.clientY;
     }
-    
+
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    
+
     return {
       x: (clientX - rect.left) * scaleX,
       y: (clientY - rect.top) * scaleY
@@ -2665,10 +2651,10 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     e.stopPropagation();
     e.preventDefault();
     setIsDraggingStamp(true);
-    
+
     const canvas = canvasRef.current;
     if (!canvas || !activeStamp) return;
-    
+
     const { x, y } = getCoordinates(e as any);
     setDragStartOffset({
       x: x - activeStamp.x,
@@ -2702,7 +2688,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     ctx.lineWidth = lineWidth;
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
-    
+
     if (shapeType === 'rect') {
       ctx.strokeRect(sX, sY, eX - sX, eY - sY);
     } else if (shapeType === 'circle') {
@@ -2715,7 +2701,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
       ctx.moveTo(sX, sY);
       ctx.lineTo(eX, eY);
       ctx.stroke();
-      
+
       const angle = Math.atan2(eY - sY, eX - sX);
       const headLength = Math.max(15, lineWidth * 3);
       ctx.beginPath();
@@ -2772,7 +2758,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     const canvas = sigCanvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
-    
+
     setSigIsDrawing(true);
     const rect = canvas.getBoundingClientRect();
     ctx.beginPath();
@@ -2787,7 +2773,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     const canvas = sigCanvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
-    
+
     const rect = canvas.getBoundingClientRect();
     ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
     ctx.stroke();
@@ -2884,7 +2870,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
     return new Promise((resolve) => {
       const canvas = canvasRef.current;
       if (!canvas) return resolve(null);
-      
+
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = canvas.width;
       tempCanvas.height = canvas.height;
@@ -2897,40 +2883,40 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
         // Draw initial unedited background to temp canvas
         tempCtx.drawImage(baseImg, 0, 0);
         const baseData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
-        
+
         // Get current annotated canvas image data
         const currentCtx = canvas.getContext('2d');
         if (!currentCtx) return resolve(null);
         const currentData = currentCtx.getImageData(0, 0, canvas.width, canvas.height);
-        
+
         // Create a transparent container to construct difference pixels
         const diffData = tempCtx.createImageData(canvas.width, canvas.height);
-        
+
         for (let i = 0; i < currentData.data.length; i += 4) {
           const r1 = baseData.data[i];
-          const g1 = baseData.data[i+1];
-          const b1 = baseData.data[i+2];
-          const a1 = baseData.data[i+3];
-          
+          const g1 = baseData.data[i + 1];
+          const b1 = baseData.data[i + 2];
+          const a1 = baseData.data[i + 3];
+
           const r2 = currentData.data[i];
-          const g2 = currentData.data[i+1];
-          const b2 = currentData.data[i+2];
-          const a2 = currentData.data[i+3];
-          
+          const g2 = currentData.data[i + 1];
+          const b2 = currentData.data[i + 2];
+          const a2 = currentData.data[i + 3];
+
           // Identify modified pixels (with subtle tolerance margin)
           if (Math.abs(r1 - r2) > 2 || Math.abs(g1 - g2) > 2 || Math.abs(b1 - b2) > 2 || Math.abs(a1 - a2) > 2) {
             diffData.data[i] = r2;
-            diffData.data[i+1] = g2;
-            diffData.data[i+2] = b2;
-            diffData.data[i+3] = a2;
+            diffData.data[i + 1] = g2;
+            diffData.data[i + 2] = b2;
+            diffData.data[i + 3] = a2;
           } else {
             diffData.data[i] = 0;
-            diffData.data[i+1] = 0;
-            diffData.data[i+2] = 0;
-            diffData.data[i+3] = 0;
+            diffData.data[i + 1] = 0;
+            diffData.data[i + 2] = 0;
+            diffData.data[i + 3] = 0;
           }
         }
-        
+
         tempCtx.putImageData(diffData, 0, 0);
         resolve(tempCanvas.toDataURL('image/png'));
       };
@@ -3027,7 +3013,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
       <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col w-full max-w-6xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-        
+
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-slate-900/50">
           <div>
@@ -3037,9 +3023,9 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
           <div className="flex items-center gap-3">
             {/* Zoom Controls */}
             <div className="flex items-center gap-1 bg-white/5 px-3 py-1 rounded-xl border border-white/10">
-              <button 
-                onClick={zoomOut} 
-                className="p-1 text-slate-400 hover:text-white transition-colors" 
+              <button
+                onClick={zoomOut}
+                className="p-1 text-slate-400 hover:text-white transition-colors"
                 title="Zoom Out (Ctrl -)"
               >
                 <Minus size={14} />
@@ -3047,23 +3033,23 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
               <span className="text-xs text-white font-semibold min-w-[3rem] text-center tabular-nums">
                 {Math.round(zoomLevel * 100)}%
               </span>
-              <button 
-                onClick={zoomIn} 
-                className="p-1 text-slate-400 hover:text-white transition-colors" 
+              <button
+                onClick={zoomIn}
+                className="p-1 text-slate-400 hover:text-white transition-colors"
                 title="Zoom In (Ctrl +)"
               >
                 <Plus size={14} />
               </button>
-              <button 
-                onClick={resetZoom} 
-                className="p-1 text-[10px] text-slate-400 hover:text-white border-l border-white/10 pl-2 ml-1" 
+              <button
+                onClick={resetZoom}
+                className="p-1 text-[10px] text-slate-400 hover:text-white border-l border-white/10 pl-2 ml-1"
                 title="Reset Zoom (Ctrl 0)"
               >
                 Reset
               </button>
             </div>
             {/* Rotate Controls */}
-            <button 
+            <button
               onClick={rotateCanvasClockwise}
               className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white transition-all"
               title="Rotate 90° Clockwise"
@@ -3079,10 +3065,10 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
 
         {/* Modal Work Environment */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-          
+
           {/* Side Toolbar Panel */}
           <div className="md:w-64 border-r border-white/5 bg-slate-900/40 p-4 space-y-5 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible shrink-0 gap-4 md:gap-0">
-            
+
             {/* Quick Tools */}
             <div className="space-y-2 w-full">
               <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold hidden md:block">Interactive Tools</span>
@@ -3114,24 +3100,23 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                   const Icon = icons[tool];
                   return (
                     <button
-                       key={tool}
-                       onClick={() => {
-                         setCurrentTool(tool);
-                         if (tool === 'signature') {
-                           setShowSignaturePad(true);
-                         } else if (tool === 'image') {
-                           fileInputRef.current?.click();
-                         }
-                       }}
-                       className={`flex flex-col items-center justify-center p-2 rounded-xl border text-[10px] font-medium transition-all ${
-                         active 
-                           ? 'bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/20' 
-                           : 'border-white/5 bg-white/5 text-slate-300 hover:bg-white/10'
-                       }`}
-                       title={labels[tool]}
+                      key={tool}
+                      onClick={() => {
+                        setCurrentTool(tool);
+                        if (tool === 'signature') {
+                          setShowSignaturePad(true);
+                        } else if (tool === 'image') {
+                          fileInputRef.current?.click();
+                        }
+                      }}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl border text-[10px] font-medium transition-all ${active
+                        ? 'bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/20'
+                        : 'border-white/5 bg-white/5 text-slate-300 hover:bg-white/10'
+                        }`}
+                      title={labels[tool]}
                     >
-                       <Icon size={16} />
-                       <span className="mt-1 font-semibold truncate hidden md:inline">{labels[tool]}</span>
+                      <Icon size={16} />
+                      <span className="mt-1 font-semibold truncate hidden md:inline">{labels[tool]}</span>
                     </button>
                   );
                 })}
@@ -3147,11 +3132,10 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                     <button
                       key={shape}
                       onClick={() => setShapeType(shape)}
-                      className={`flex-1 py-1 px-2 text-[10px] font-semibold border rounded-lg transition-all ${
-                        shapeType === shape 
-                          ? 'bg-slate-700 border-primary-500 text-white' 
-                          : 'border-white/5 bg-white/5 text-slate-300 hover:bg-white/10'
-                      }`}
+                      className={`flex-1 py-1 px-2 text-[10px] font-semibold border rounded-lg transition-all ${shapeType === shape
+                        ? 'bg-slate-700 border-primary-500 text-white'
+                        : 'border-white/5 bg-white/5 text-slate-300 hover:bg-white/10'
+                        }`}
                     >
                       {shape === 'rect' ? 'Square' : shape === 'circle' ? 'Circle' : 'Arrow'}
                     </button>
@@ -3201,9 +3185,8 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                   <button
                     key={c}
                     onClick={() => setColor(c)}
-                    className={`w-6 h-6 rounded-full border-2 transition-all ${
-                      color === c ? 'border-white scale-110 shadow-lg' : 'border-white/10'
-                    }`}
+                    className={`w-6 h-6 rounded-full border-2 transition-all ${color === c ? 'border-white scale-110 shadow-lg' : 'border-white/10'
+                      }`}
                     style={{ backgroundColor: c }}
                   />
                 ))}
@@ -3216,13 +3199,13 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                 <span>Brush / Font Size</span>
                 <span>{lineWidth}px</span>
               </div>
-              <input 
-                type="range" 
-                min={2} 
-                max={40} 
-                value={lineWidth} 
+              <input
+                type="range"
+                min={2}
+                max={40}
+                value={lineWidth}
                 onChange={e => setLineWidth(Number(e.target.value))}
-                className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary-500" 
+                className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary-500"
               />
             </div>
 
@@ -3233,21 +3216,21 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                   <span>Stamp Size Scale</span>
                   <span>{Math.round(stampScale * 100)}%</span>
                 </div>
-                <input 
-                  type="range" 
-                  min={0.05} 
-                  max={1.5} 
+                <input
+                  type="range"
+                  min={0.05}
+                  max={1.5}
                   step={0.05}
-                  value={stampScale} 
+                  value={stampScale}
                   onChange={e => setStampScale(Number(e.target.value))}
-                  className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary-500" 
+                  className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary-500"
                 />
               </div>
             )}
 
             {/* Stamped image reset option */}
             {currentTool === 'image' && stampedImage && (
-              <button 
+              <button
                 onClick={() => { setStampedImage(null); setCurrentTool('draw'); }}
                 className="btn-base bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-3 py-1.5 text-xs rounded-xl w-full text-center font-semibold border border-red-500/20"
               >
@@ -3273,7 +3256,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
 
           {/* Interactive Draw Environment */}
           <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 relative overflow-auto select-none">
-            <div 
+            <div
               className="relative border border-white/10 rounded-xl shadow-2xl bg-white max-h-[68vh] aspect-[3/4] flex items-center justify-center overflow-visible transition-transform duration-100 ease-out origin-center"
               style={{ transform: `scale(${zoomLevel})` }}
             >
@@ -3292,7 +3275,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
 
                 {/* Text Tool Absolute Overlay Input */}
                 {textInput && (
-                  <div 
+                  <div
                     className="absolute z-40 bg-transparent"
                     style={{
                       left: `${(textInput.x / canvasDimensions.width) * 100}%`,
@@ -3318,7 +3301,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
 
                 {/* Drag-and-place active stamp overlay */}
                 {activeStamp && stampedImage && (
-                  <div 
+                  <div
                     className="absolute z-50 select-none cursor-move border-2 border-dashed border-primary-500 rounded-lg p-1 bg-primary-500/5 group"
                     style={{
                       left: `${(activeStamp.x / canvasDimensions.width) * 100}%`,
@@ -3331,12 +3314,12 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
                     onTouchStart={handleStampDragStart}
                     onDoubleClick={() => finalizeStampPlacement()}
                   >
-                    <img 
-                      src={stampedImage} 
+                    <img
+                      src={stampedImage}
                       alt="Active Stamp"
                       className="w-full h-full object-contain pointer-events-none"
                     />
-                    
+
                     {/* Position action controls floating above active stamp */}
                     <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-900 border border-white/10 rounded-lg px-1.5 py-0.5 shadow-xl shrink-0 whitespace-nowrap opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
                       <span className="text-[9px] text-slate-300 font-medium px-1 mr-1 border-r border-white/10">Drag to Position</span>
@@ -3368,12 +3351,12 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
         </div>
 
         {/* Hidden inputs & overlays */}
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          accept="image/*" 
-          onChange={handleCustomImageUpload} 
-          className="hidden" 
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={handleCustomImageUpload}
+          className="hidden"
         />
 
         {/* Floating Signature Canvas Dialog */}
@@ -3391,17 +3374,15 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
               <div className="flex bg-slate-950 p-1 rounded-xl mb-4 border border-white/5">
                 <button
                   onClick={() => setSigMode('draw')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                    sigMode === 'draw' ? 'bg-primary-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
-                  }`}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${sigMode === 'draw' ? 'bg-primary-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                    }`}
                 >
                   Draw Signature
                 </button>
                 <button
                   onClick={() => setSigMode('upload')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                    sigMode === 'upload' ? 'bg-primary-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
-                  }`}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${sigMode === 'upload' ? 'bg-primary-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                    }`}
                 >
                   Upload Image
                 </button>
@@ -3496,7 +3477,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
         {/* Footer controls: Undo / Redo / Reset / Save */}
         <div className="px-6 py-4 border-t border-white/5 bg-slate-900/80 flex items-center justify-between">
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={undo}
               disabled={historyIndex <= 0}
               className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -3504,7 +3485,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
             >
               <Undo size={16} />
             </button>
-            <button 
+            <button
               onClick={redo}
               disabled={historyIndex >= history.length - 1}
               className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -3512,7 +3493,7 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
             >
               <Redo size={16} />
             </button>
-            <button 
+            <button
               onClick={() => restoreHistoryState(0)}
               className="p-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 text-xs font-bold transition-all"
               title="Reset all edits"
@@ -3520,29 +3501,29 @@ function CanvasEditorModal({ page, index, allPages, onClose, onSave, onSaveAll }
               Reset Page
             </button>
           </div>
-          
+
           <div className="flex gap-3">
-            <button 
+            <button
               onClick={downloadCurrentPage}
               className="px-4 py-2 rounded-xl bg-primary-500/10 hover:bg-primary-500 text-primary-500 hover:text-white border border-primary-500/20 text-xs font-semibold flex items-center gap-1.5 transition-all"
               title="Download edited page instantly as a PNG image"
             >
               <Download size={14} /> Instant Download
             </button>
-            <button 
+            <button
               onClick={handleApplyToAllPages}
               className="px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-blue-500/20 transition-all"
               title="Composite current page's edits/drawings onto ALL upload pages"
             >
               <Layers size={14} /> Apply to All Pages
             </button>
-            <button 
+            <button
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold transition-all"
             >
               Cancel
             </button>
-            <button 
+            <button
               onClick={handleFinalSave}
               className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition-all"
             >
