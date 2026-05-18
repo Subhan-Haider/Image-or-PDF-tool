@@ -495,28 +495,30 @@ export default function PdfTools() {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex justify-center mb-8">
-          <div className="flex p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl backdrop-blur-xl">
+        <div className="flex justify-center mb-8 px-2">
+          <div className="flex flex-wrap sm:flex-nowrap justify-center p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl backdrop-blur-xl gap-1 sm:gap-0 w-full max-w-2xl">
             {(['editor', 'to-images', 'from-images'] as const).map(tab => {
               const active = activeTab === tab;
               const labels = {
-                'editor': { text: 'PDF Organizer / Merger', icon: Layers },
-                'to-images': { text: 'PDF to Images', icon: FileImage },
-                'from-images': { text: 'Images to PDF', icon: ImageIcon }
+                'editor': { text: 'PDF Organizer / Merger', mobileText: 'Organizer', icon: Layers },
+                'to-images': { text: 'PDF to Images', mobileText: 'PDF to Img', icon: FileImage },
+                'from-images': { text: 'Images to PDF', mobileText: 'Img to PDF', icon: ImageIcon }
               };
               const Icon = labels[tab].icon;
               return (
                 <button
                   key={tab}
+                  type="button"
                   onClick={() => { setActiveTab(tab); clearWorkspace(); }}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-300 ${
                     active 
                       ? 'bg-white dark:bg-surface-800 text-slate-900 dark:text-white shadow-md' 
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Icon size={16} />
-                  <span>{labels[tab].text}</span>
+                  <Icon size={14} className="flex-shrink-0" />
+                  <span className="hidden sm:inline">{labels[tab].text}</span>
+                  <span className="inline sm:hidden">{labels[tab].mobileText}</span>
                 </button>
               );
             })}
@@ -587,21 +589,23 @@ export default function PdfTools() {
                               style={{ transform: `rotate(${page.rotation}deg)` }}
                             />
                             
-                            {/* Hover overlay triggers */}
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            {/* Floating Action Toolbar - Fully Mobile & Touch Friendly */}
+                            <div className="absolute top-2 right-2 z-25 flex items-center gap-1.5 bg-black/50 backdrop-blur-md p-1 rounded-lg shadow-lg border border-white/10">
                               <button 
+                                type="button"
                                 onClick={() => rotatePage(page.id)}
-                                className="p-1.5 rounded-lg bg-white/20 text-white hover:bg-white/30"
-                                title="Rotate Clockwise"
+                                className="p-1.5 rounded-md bg-white/10 text-white hover:bg-primary-500 hover:text-white transition-all"
+                                title="Rotate Page 90°"
                               >
-                                <RotateCw size={14} />
+                                <RotateCw size={12} />
                               </button>
                               <button 
+                                type="button"
                                 onClick={() => deletePage(page.id)}
-                                className="p-1.5 rounded-lg bg-red-500/80 text-white hover:bg-red-500"
+                                className="p-1.5 rounded-md bg-red-500/20 text-red-300 hover:bg-red-600 hover:text-white transition-all"
                                 title="Delete Page"
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={12} />
                               </button>
                             </div>
                           </div>
@@ -760,12 +764,16 @@ export default function PdfTools() {
                           
                           <div className="aspect-[3/4] rounded-lg overflow-hidden bg-white/20 relative flex items-center justify-center">
                             <img src={item.preview} alt={item.name} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            
+                            {/* Floating Actions - Fully Touch & Mobile Friendly */}
+                            <div className="absolute top-2 right-2 z-25 flex items-center gap-1.5 bg-black/50 backdrop-blur-md p-1 rounded-lg shadow-lg border border-white/10">
                               <button 
+                                type="button"
                                 onClick={() => deleteImagePage(item.id)}
-                                className="p-1.5 rounded-lg bg-red-500/80 text-white hover:bg-red-500"
+                                className="p-1.5 rounded-md bg-red-500/20 text-red-300 hover:bg-red-600 hover:text-white transition-all"
+                                title="Delete Image"
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={12} />
                               </button>
                             </div>
                           </div>
