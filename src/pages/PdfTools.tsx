@@ -1021,7 +1021,7 @@ export default function PdfTools() {
 
         {/* Tab Switcher */}
         <div className="flex justify-center mb-8 px-2">
-          <div className="flex flex-wrap sm:flex-nowrap justify-center p-1.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl backdrop-blur-xl gap-1 sm:gap-1 w-full max-w-3xl">
+          <div className="flex flex-wrap sm:flex-nowrap justify-center p-1.5 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-2xl gap-1 w-full max-w-3xl shadow-inner">
             {(['editor', 'to-images', 'from-images', 'compress', 'office-to-pdf'] as const).map(tab => {
               const active = activeTab === tab;
               const labels = {
@@ -1029,7 +1029,7 @@ export default function PdfTools() {
                 'to-images': { text: 'PDF to Images', mobileText: 'PDF to Img', icon: FileImage },
                 'from-images': { text: 'Images to PDF', mobileText: 'Img to PDF', icon: ImageIcon },
                 'compress': { text: 'Compress PDF', mobileText: 'Compress', icon: FileDown },
-                'office-to-pdf': { text: 'Office to PDF', mobileText: 'Office converter', icon: FileText }
+                'office-to-pdf': { text: 'Office to PDF', mobileText: 'Office', icon: FileText }
               };
               const Icon = labels[tab].icon;
               return (
@@ -1037,10 +1037,10 @@ export default function PdfTools() {
                   key={tab}
                   type="button"
                   onClick={() => { setActiveTab(tab); clearWorkspace(); }}
-                  className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300 ${
-                    active 
-                      ? 'bg-white dark:bg-surface-800 text-slate-900 dark:text-white shadow-md' 
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                    active
+                      ? 'bg-white dark:bg-slate-600 text-primary-600 dark:text-white shadow-md'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50'
                   }`}
                 >
                   <Icon size={14} className="flex-shrink-0" />
